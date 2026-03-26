@@ -142,9 +142,10 @@ export class KpiService {
   /**
    * Get hourly order heatmap data
    */
-  async getOrderHeatmap(tenantId: string, days = 30) {
+  async getOrderHeatmap(tenantId: string, days: number | string = 30) {
+    const numDays = Number(days) || 30;
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    startDate.setDate(startDate.getDate() - numDays);
 
     const orders = await this.prisma.order.findMany({
       where: {

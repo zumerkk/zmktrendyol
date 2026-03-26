@@ -26,7 +26,7 @@ export class GameTheoryPricingService {
         pricingRules: { where: { isActive: true } },
       },
     });
-    if (!product) throw new Error("Product not found");
+    if (!product) return { message: "Product not found", productId, optimalPrice: null };
 
     // Get competitor prices
     const competitors = await this.prisma.competitorProduct.findMany({

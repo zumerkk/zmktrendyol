@@ -48,7 +48,7 @@ export class MlPredictionService {
       },
     });
 
-    if (!product) throw new Error("Product not found");
+    if (!product) return { message: "Product not found", productId, prediction: null };
 
     // Build daily sales history (last 90 days)
     const dailySales = this.buildDailySales(product.orderItems, 90);

@@ -169,9 +169,10 @@ export class AdsService {
   /**
    * Get keyword performances for a campaign
    */
-  async getKeywordPerformances(campaignId: string, days = 30) {
+  async getKeywordPerformances(campaignId: string, days: number | string = 30) {
+    const numDays = Number(days) || 30;
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    startDate.setDate(startDate.getDate() - numDays);
 
     const keywords = await this.prisma.adKeywordPerformance.findMany({
       where: {
@@ -300,9 +301,10 @@ export class AdsService {
   /**
    * Get daily metrics for a campaign
    */
-  async getDailyMetrics(campaignId: string, days = 30) {
+  async getDailyMetrics(campaignId: string, days: number | string = 30) {
+    const numDays = Number(days) || 30;
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    startDate.setDate(startDate.getDate() - numDays);
 
     return this.prisma.adDailyMetric.findMany({
       where: {
@@ -316,9 +318,10 @@ export class AdsService {
   /**
    * Get ACOS analysis across all campaigns
    */
-  async getACOSAnalysis(tenantId: string, days = 30) {
+  async getACOSAnalysis(tenantId: string, days: number | string = 30) {
+    const numDays = Number(days) || 30;
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    startDate.setDate(startDate.getDate() - numDays);
 
     const campaigns = await this.prisma.adCampaign.findMany({
       where: { tenantId },

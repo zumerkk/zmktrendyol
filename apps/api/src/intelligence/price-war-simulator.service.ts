@@ -25,7 +25,7 @@ export class PriceWarSimulatorService {
             }
         });
 
-        if (!product) throw new Error('Product not found');
+        if (!product) return { message: 'Product not found', productId, simulation: null };
 
         // 1. Current State Calculations
         const currentPrice = Number((product as any).salePrice || 0);

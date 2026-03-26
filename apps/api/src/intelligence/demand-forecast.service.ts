@@ -41,12 +41,13 @@ export class DemandForecastService {
   /**
    * Forecast demand for a single product
    */
-  async forecastProduct(tenantId: string, productId: string, days = 90) {
+  async forecastProduct(tenantId: string, productId: string, days: number | string = 90) {
+    const numDays = Number(days) || 90;
     const product = await this.prisma.product.findFirst({
       where: { id: productId, tenantId },
     });
 
-    if (!product) throw new Error("Ürün bulunamadı");
+    if (!product) return { message: "Ürün bulunamadı", productId, forecast: null };
 
     // Get historical sales data (last 6 months)
     const sixMonthsAgo = new Date();
@@ -117,7 +118,7 @@ export class DemandForecastService {
     const today = new Date();
     let cumulativeSales = 0;
 
-    for (let i = 1; i <= days; i++) {
+    for (let i = 1; i <= numDays; i++) {
       const futureDate = new Date(today);
       futureDate.setDate(futureDate.getDate() + i);
 
@@ -154,7 +155,7 @@ export class DemandForecastService {
     return {
       productId,
       productTitle: product.title,
-      forecastPeriod: `${days} gün`,
+      forecastPeriod: `${numDays} gün`,
       historicalData: {
         totalSold,
         avgDailySales: round(avgDailySales),
@@ -164,7 +165,7 @@ export class DemandForecastService {
       },
       forecast: {
         totalPredicted: round(cumulativeSales),
-        avgDaily: round(cumulativeSales / days),
+        avgDaily: round(cumulativeSales / numDays),
         next30Days: round(forecast.slice(0, 30).reduce((s, f) => s + f.predictedSales, 0)),
         next60Days: round(forecast.slice(0, 60).reduce((s, f) => s + f.predictedSales, 0)),
         next90Days: round(cumulativeSales),

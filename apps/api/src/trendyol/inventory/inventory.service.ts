@@ -102,9 +102,10 @@ export class InventoryService {
   /**
    * Get price history for a product (6 months)
    */
-  async getPriceHistory(tenantId: string, productId: string, months = 6) {
+  async getPriceHistory(tenantId: string, productId: string, months: number | string = 6) {
+    const numMonths = Number(months) || 6;
     const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - months);
+    startDate.setMonth(startDate.getMonth() - numMonths);
 
     return this.prisma.priceHistory.findMany({
       where: {
@@ -119,9 +120,10 @@ export class InventoryService {
   /**
    * Get price extremes (min/max) for a period
    */
-  async getPriceExtremes(tenantId: string, productId: string, months = 6) {
+  async getPriceExtremes(tenantId: string, productId: string, months: number | string = 6) {
+    const numMonths = Number(months) || 6;
     const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - months);
+    startDate.setMonth(startDate.getMonth() - numMonths);
 
     const history = await this.prisma.priceHistory.findMany({
       where: {

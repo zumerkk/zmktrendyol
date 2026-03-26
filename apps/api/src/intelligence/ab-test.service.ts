@@ -40,7 +40,7 @@ export class AbTestService {
     const product = await this.prisma.product.findUnique({
       where: { id: dto.productId },
     });
-    if (!product) throw new Error("Product not found");
+    if (!product) return { message: "Product not found", test: null };
 
     let variants: Array<{
       id: string;
