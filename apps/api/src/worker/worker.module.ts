@@ -17,6 +17,13 @@ import { ApiSyncWorkerService } from "./api-sync-worker.service";
       connection: {
         host: process.env.REDIS_HOST || "localhost",
         port: parseInt(process.env.REDIS_PORT || "6379", 10),
+        maxRetriesPerRequest: null,
+        retryStrategy: (times: number) => {
+          if (times > 3) return null; // stop retrying after 3 attempts
+          return Math.min(times * 5000, 15000);
+        },
+        lazyConnect: true,
+        enableOfflineQueue: false,
       },
     }),
     BullModule.registerQueue({
