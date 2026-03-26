@@ -1,190 +1,86 @@
 "use client";
 
-export default function AuditPage() {
-  const logs = [
-    {
-      id: "1",
-      time: "06.03.2026 08:12",
-      user: "admin@zmk.com",
-      action: "price_update",
-      entity: "Kış Montu Premium XL",
-      detail: "₺949 → ₺899",
-      ip: "85.105.xxx.xxx",
-    },
-    {
-      id: "2",
-      time: "06.03.2026 07:58",
-      user: "admin@zmk.com",
-      action: "stock_update",
-      entity: "Spor Ayakkabı Unisex",
-      detail: "200 → 78",
-      ip: "85.105.xxx.xxx",
-    },
-    {
-      id: "3",
-      time: "05.03.2026 22:30",
-      user: "system",
-      action: "buybox_alert",
-      entity: "Kış Montu Premium XL",
-      detail: "Buybox kaybı — rakip fiyat: ₺819",
-      ip: "server",
-    },
-    {
-      id: "4",
-      time: "05.03.2026 19:15",
-      user: "admin@zmk.com",
-      action: "competitor_add",
-      entity: "SporŞık Mağaza",
-      detail: "15 ürün takipe alındı",
-      ip: "85.105.xxx.xxx",
-    },
-    {
-      id: "5",
-      time: "05.03.2026 16:00",
-      user: "system",
-      action: "sync_complete",
-      entity: "Sipariş Sync",
-      detail: "147 yeni sipariş çekildi",
-      ip: "server",
-    },
-    {
-      id: "6",
-      time: "05.03.2026 14:30",
-      user: "admin@zmk.com",
-      action: "login",
-      entity: "Auth",
-      detail: "Başarılı giriş",
-      ip: "85.105.xxx.xxx",
-    },
-    {
-      id: "7",
-      time: "04.03.2026 23:00",
-      user: "system",
-      action: "stock_alert",
-      entity: "Kadın Trençkot Bej",
-      detail: "Stok kritik: 12 adet",
-      ip: "server",
-    },
-    {
-      id: "8",
-      time: "04.03.2026 21:45",
-      user: "system",
-      action: "scrape_complete",
-      entity: "Scraper",
-      detail: "38 ürün tarandı",
-      ip: "server",
-    },
-  ];
+import { useQuery } from "@tanstack/react-query";
+import { api, isAuthenticated } from "../../../lib/api";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-  const actionIcons: Record<string, string> = {
-    price_update: "💰",
-    stock_update: "📦",
-    buybox_alert: "🚨",
-    competitor_add: "⚔️",
-    sync_complete: "🔄",
-    login: "🔐",
-    stock_alert: "⚠️",
-    scrape_complete: "🕷️",
-  };
+export default function AuditPage() {
+  const router = useRouter();
+  useEffect(() => { if (!isAuthenticated()) router.push("/login"); }, [router]);
+
+  const { data: usage } = useQuery({
+    queryKey: ["usage-stats"],
+    queryFn: () => api.get("/intelligence/usage"),
+    enabled: isAuthenticated(),
+  });
+
+  const { data: routes } = useQuery({
+    queryKey: ["system-routes"],
+    queryFn: () => api.get("/system/routes"),
+    enabled: isAuthenticated(),
+  });
+
+  const usageData: any = usage || {};
+  const routeList: any[] = Array.isArray(routes) ? routes : routes?.routes || [];
 
   return (
     <>
       <div className="page-header">
         <h1 className="page-title">📋 Denetim İzleri</h1>
-        <p className="page-subtitle">
-          Tüm sistem aktiviteleri, kullanıcı işlemleri ve otomasyon kayıtları
-        </p>
+        <p className="page-subtitle">Kullanım istatistikleri ve API rotaları</p>
       </div>
 
       <div className="page-content animate-fade-in">
         <div className="kpi-grid">
           <div className="kpi-card">
-            <div className="kpi-label">Bugün İşlem</div>
-            <div className="kpi-value">
-              {logs.filter((l) => l.time.startsWith("06")).length}
-            </div>
+            <div className="kpi-label">API Çağrısı</div>
+            <div className="kpi-value">{usageData.apiCalls || usageData.totalRequests || 0}</div>
           </div>
           <div className="kpi-card">
-            <div className="kpi-label">Sistem Uyarısı</div>
-            <div
-              className="kpi-value"
-              style={{ color: "var(--accent-warning)" }}
-            >
-              {logs.filter((l) => l.user === "system").length}
-            </div>
+            <div className="kpi-label">AI Kullanımı</div>
+            <div className="kpi-value">{usageData.aiGenerations || 0}</div>
           </div>
           <div className="kpi-card">
-            <div className="kpi-label">Kullanıcı İşlemi</div>
-            <div className="kpi-value">
-              {logs.filter((l) => l.user !== "system").length}
-            </div>
+            <div className="kpi-label">Toplam Rota</div>
+            <div className="kpi-value">{routeList.length}</div>
           </div>
         </div>
 
         <div className="card">
           <div className="card-header">
-            <div className="card-title">İşlem Geçmişi</div>
-            <span className="source-badge api">API</span>
+            <div className="card-title">🛣️ API Rotaları ({routeList.length})</div>
+            <span className="source-badge api">SYSTEM</span>
           </div>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Zaman</th>
-                <th>İşlem</th>
-                <th>Kullanıcı</th>
-                <th>Hedef</th>
-                <th>Detay</th>
-                <th>IP</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((l) => (
-                <tr key={l.id}>
-                  <td
-                    style={{
-                      fontSize: 12,
-                      color: "var(--text-muted)",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {l.time}
-                  </td>
-                  <td>
-                    <span style={{ fontSize: 14 }}>
-                      {actionIcons[l.action] || "📝"}
-                    </span>{" "}
-                    <span style={{ fontWeight: 600, fontSize: 12 }}>
-                      {l.action}
-                    </span>
-                  </td>
-                  <td
-                    style={{
-                      fontSize: 12,
-                      color:
-                        l.user === "system"
-                          ? "var(--accent-secondary)"
-                          : "var(--text-secondary)",
-                    }}
-                  >
-                    {l.user}
-                  </td>
-                  <td style={{ fontWeight: 500 }}>{l.entity}</td>
-                  <td style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                    {l.detail}
-                  </td>
-                  <td
-                    style={{
-                      fontFamily: "monospace",
-                      fontSize: 11,
-                      color: "var(--text-muted)",
-                    }}
-                  >
-                    {l.ip}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {routeList.length > 0 ? (
+            <table className="data-table">
+              <thead>
+                <tr><th>Method</th><th>Path</th></tr>
+              </thead>
+              <tbody>
+                {routeList.slice(0, 30).map((r: any, i: number) => (
+                  <tr key={i}>
+                    <td>
+                      <span style={{
+                        padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700, fontFamily: "monospace",
+                        background: r.method === "GET" ? "rgba(34,197,94,0.15)" : r.method === "POST" ? "rgba(59,130,246,0.15)" : "rgba(239,68,68,0.15)",
+                        color: r.method === "GET" ? "#22c55e" : r.method === "POST" ? "#3b82f6" : "#ef4444"
+                      }}>
+                        {r.method}
+                      </span>
+                    </td>
+                    <td style={{ fontFamily: "monospace", fontSize: 12, color: "var(--text-secondary)" }}>
+                      {r.path}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div style={{ padding: 24, textAlign: "center", color: "var(--text-muted)" }}>
+              Rota bilgisi yükleniyor...
+            </div>
+          )}
         </div>
       </div>
     </>

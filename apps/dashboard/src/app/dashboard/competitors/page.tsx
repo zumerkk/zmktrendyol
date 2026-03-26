@@ -1,259 +1,113 @@
 "use client";
 
-export default function CompetitorsPage() {
-  const competitors = [
-    {
-      name: "ModaHane Store",
-      products: 12,
-      avgPrice: "₺649",
-      buyboxWin: 67,
-      priceGap: "-₺25",
-      status: "tracking",
-      lastCheck: "2dk önce",
-    },
-    {
-      name: "TürkGiyim Official",
-      products: 8,
-      avgPrice: "₺720",
-      buyboxWin: 45,
-      priceGap: "+₺50",
-      status: "tracking",
-      lastCheck: "5dk önce",
-    },
-    {
-      name: "SporŞık Mağaza",
-      products: 15,
-      avgPrice: "₺399",
-      buyboxWin: 82,
-      priceGap: "-₺80",
-      status: "alert",
-      lastCheck: "1dk önce",
-    },
-    {
-      name: "ElegantWear TR",
-      products: 6,
-      avgPrice: "₺1,150",
-      buyboxWin: 33,
-      priceGap: "+₺120",
-      status: "tracking",
-      lastCheck: "8dk önce",
-    },
-    {
-      name: "FashionPeak",
-      products: 20,
-      avgPrice: "₺510",
-      buyboxWin: 71,
-      priceGap: "-₺15",
-      status: "alert",
-      lastCheck: "3dk önce",
-    },
-  ];
+import { useQuery } from "@tanstack/react-query";
+import { api, isAuthenticated } from "../../../lib/api";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-  const buyboxAlerts = [
-    {
-      product: "Kış Montu Premium XL",
-      competitor: "SporŞık Mağaza",
-      theirPrice: "₺819",
-      yourPrice: "₺899",
-      diff: "-₺80",
-      time: "3dk önce",
-    },
-    {
-      product: "Spor Ayakkabı Unisex",
-      competitor: "FashionPeak",
-      theirPrice: "₺534",
-      yourPrice: "₺549",
-      diff: "-₺15",
-      time: "5dk önce",
-    },
-  ];
+export default function CompetitorsPage() {
+  const router = useRouter();
+  useEffect(() => { if (!isAuthenticated()) router.push("/login"); }, [router]);
+
+  const { data: competitors, isLoading } = useQuery({
+    queryKey: ["competitors"],
+    queryFn: () => api.get("/competitors"),
+    enabled: isAuthenticated(),
+  });
+
+  const { data: buybox } = useQuery({
+    queryKey: ["buybox"],
+    queryFn: () => api.get("/competitors/buybox/status"),
+    enabled: isAuthenticated(),
+  });
+
+  const { data: probes } = useQuery({
+    queryKey: ["probes"],
+    queryFn: () => api.get("/competitors/probes/active"),
+    enabled: isAuthenticated(),
+  });
+
+  const compList: any[] = Array.isArray(competitors) ? competitors : [];
+  const buyboxData: any = buybox || {};
+  const probeList: any[] = Array.isArray(probes) ? probes : [];
+
+  if (isLoading) {
+    return (
+      <div className="page-content" style={{ textAlign: "center", padding: 80 }}>
+        <div style={{ fontSize: 40, marginBottom: 16 }}>⏳</div>
+        <div style={{ color: "var(--text-secondary)" }}>Rakip verileri yükleniyor...</div>
+      </div>
+    );
+  }
 
   return (
     <>
       <div className="page-header">
         <h1 className="page-title">⚔️ Rakip İzleme</h1>
-        <p className="page-subtitle">
-          Rakip fiyatları, buybox durumu ve dinamik fiyatlama aksiyonları
-        </p>
+        <p className="page-subtitle">Rakip fiyatları ve buybox durumu — Gerçek Veriler</p>
       </div>
 
       <div className="page-content animate-fade-in">
         <div className="kpi-grid">
           <div className="kpi-card">
             <div className="kpi-label">Takip Edilen Rakip</div>
-            <div className="kpi-value">{competitors.length}</div>
-            <div className="kpi-source">
-              Kaynak: <span className="source-badge public">PUBLIC</span>
-            </div>
+            <div className="kpi-value">{compList.length}</div>
+            <div className="kpi-source">Kaynak: <span className="source-badge api">API</span></div>
           </div>
           <div className="kpi-card">
-            <div className="kpi-label">İzlenen Ürün</div>
-            <div className="kpi-value">
-              {competitors.reduce((s, c) => s + c.products, 0)}
-            </div>
-            <div className="kpi-source">
-              Kaynak: <span className="source-badge public">PUBLIC</span>
-            </div>
+            <div className="kpi-label">Aktif Probe</div>
+            <div className="kpi-value">{probeList.length}</div>
+            <div className="kpi-source">Kaynak: <span className="source-badge api">API</span></div>
           </div>
           <div className="kpi-card">
             <div className="kpi-label">Buybox Uyarısı</div>
-            <div
-              className="kpi-value"
-              style={{ color: "var(--accent-danger)" }}
-            >
-              {buyboxAlerts.length}
+            <div className="kpi-value" style={{ color: "var(--accent-danger)" }}>
+              {buyboxData.alerts?.length || 0}
             </div>
-            <div className="kpi-source">
-              Kaynak: <span className="source-badge estimate">ESTIMATE</span>
-            </div>
-          </div>
-          <div className="kpi-card">
-            <div className="kpi-label">Ort. Buybox Kazanma</div>
-            <div className="kpi-value">
-              %
-              {Math.round(
-                competitors.reduce((s, c) => s + c.buyboxWin, 0) /
-                  competitors.length,
-              )}
-            </div>
-            <div className="kpi-source">
-              Kaynak: <span className="source-badge estimate">ESTIMATE</span>
-            </div>
+            <div className="kpi-source">Kaynak: <span className="source-badge estimate">ESTIMATE</span></div>
           </div>
         </div>
 
-        {/* Buybox Alerts */}
-        {buyboxAlerts.length > 0 && (
-          <div
-            className="card"
-            style={{ marginBottom: 24, borderColor: "rgba(239, 68, 68, 0.3)" }}
-          >
-            <div className="card-header">
-              <div className="card-title">🚨 Buybox Uyarıları</div>
-              <span className="status-badge error">ACİL</span>
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title">Rakip Listesi</div>
+            <span className="source-badge api">API</span>
+          </div>
+          {compList.length === 0 ? (
+            <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
+              Henüz rakip eklenmedi — Rakip ekleyin
             </div>
+          ) : (
             <table className="data-table">
               <thead>
-                <tr>
-                  <th>Ürün</th>
-                  <th>Rakip</th>
-                  <th>Onların Fiyatı</th>
-                  <th>Sizin Fiyatınız</th>
-                  <th>Fark</th>
-                  <th>Zaman</th>
-                </tr>
+                <tr><th>Ürün</th><th>Marka</th><th>Fiyat</th><th>Takip</th></tr>
               </thead>
               <tbody>
-                {buyboxAlerts.map((a, i) => (
-                  <tr key={i}>
-                    <td style={{ fontWeight: 600 }}>{a.product}</td>
-                    <td style={{ color: "var(--accent-danger)" }}>
-                      {a.competitor}
+                {compList.map((c: any) => (
+                  <tr key={c.id}>
+                    <td>
+                      <div style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+                        {(c.title || "").substring(0, 50)}
+                      </div>
+                      {c.trendyolUrl && (
+                        <a href={c.trendyolUrl} target="_blank" rel="noreferrer"
+                          style={{ fontSize: 10, color: "var(--accent-primary-light)" }}>Trendyol'da Gör</a>
+                      )}
                     </td>
-                    <td
-                      style={{
-                        fontWeight: 700,
-                        color: "var(--accent-success)",
-                      }}
-                    >
-                      {a.theirPrice}
+                    <td>{c.brand || "—"}</td>
+                    <td style={{ fontWeight: 700 }}>
+                      {c.snapshots?.[0]?.price ? `₺${Number(c.snapshots[0].price).toLocaleString("tr-TR")}` : "—"}
                     </td>
-                    <td style={{ fontWeight: 700 }}>{a.yourPrice}</td>
-                    <td
-                      style={{ fontWeight: 700, color: "var(--accent-danger)" }}
-                    >
-                      {a.diff}
-                    </td>
-                    <td style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                      {a.time}
+                    <td>
+                      <span className="status-badge active">
+                        {c.trackedSince ? new Date(c.trackedSince).toLocaleDateString("tr-TR") : "Aktif"}
+                      </span>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
-
-        {/* Competitor Table */}
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">Rakip Listesi</div>
-            <span className="source-badge public">PUBLIC</span>
-          </div>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Mağaza</th>
-                <th>İzlenen Ürün</th>
-                <th>Ort. Fiyat</th>
-                <th>Buybox Kazanma</th>
-                <th>Fiyat Farkı</th>
-                <th>Son Kontrol</th>
-                <th>Durum</th>
-              </tr>
-            </thead>
-            <tbody>
-              {competitors.map((c, i) => (
-                <tr key={i}>
-                  <td style={{ fontWeight: 700, color: "var(--text-primary)" }}>
-                    {c.name}
-                  </td>
-                  <td>{c.products}</td>
-                  <td style={{ fontWeight: 600 }}>{c.avgPrice}</td>
-                  <td>
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 8 }}
-                    >
-                      <div
-                        style={{
-                          flex: 1,
-                          height: 4,
-                          borderRadius: 2,
-                          background: "var(--bg-tertiary)",
-                          maxWidth: 60,
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: `${c.buyboxWin}%`,
-                            height: "100%",
-                            borderRadius: 2,
-                            background:
-                              c.buyboxWin > 60
-                                ? "var(--accent-danger)"
-                                : "var(--accent-success)",
-                          }}
-                        />
-                      </div>
-                      <span style={{ fontSize: 12, fontWeight: 600 }}>
-                        %{c.buyboxWin}
-                      </span>
-                    </div>
-                  </td>
-                  <td
-                    style={{
-                      fontWeight: 700,
-                      color: c.priceGap.startsWith("-")
-                        ? "var(--accent-danger)"
-                        : "var(--accent-success)",
-                    }}
-                  >
-                    {c.priceGap}
-                  </td>
-                  <td style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                    {c.lastCheck}
-                  </td>
-                  <td>
-                    <span
-                      className={`status-badge ${c.status === "alert" ? "error" : "active"}`}
-                    >
-                      {c.status === "alert" ? "⚠️ Uyarı" : "✅ Takip"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          )}
         </div>
       </div>
     </>

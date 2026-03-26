@@ -1,247 +1,170 @@
 "use client";
 
-export default function SettingsPage() {
-  const connections = [
-    {
-      name: "Trendyol API",
-      status: "not_connected",
-      desc: "Ürün, sipariş ve stok verileri",
-      action: "Bağla",
-    },
-    {
-      name: "OpenAI (GPT-4o)",
-      status: "not_connected",
-      desc: "AI asistan, yorum analizi, listing optimize",
-      action: "API Key Gir",
-    },
-    {
-      name: "Telegram Bot",
-      status: "not_connected",
-      desc: "Mobil bildirimler",
-      action: "Bot Token Gir",
-    },
-    {
-      name: "Google Gemini",
-      status: "optional",
-      desc: "Alternatif AI provider",
-      action: "Opsiyonel",
-    },
-    {
-      name: "Proxy Pool",
-      status: "optional",
-      desc: "Scraper IP rotasyonu",
-      action: "Opsiyonel",
-    },
-  ];
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api, isAuthenticated, clearToken } from "../../../lib/api";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-  const statusMap: Record<string, { class: string; label: string }> = {
-    connected: { class: "active", label: "✅ Bağlı" },
-    not_connected: { class: "error", label: "❌ Bağlanmadı" },
-    optional: { class: "inactive", label: "➖ Opsiyonel" },
-  };
+export default function SettingsPage() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  useEffect(() => { if (!isAuthenticated()) router.push("/login"); }, [router]);
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: () => api.get("/auth/me"),
+    enabled: isAuthenticated(),
+  });
+
+  const { data: connections } = useQuery({
+    queryKey: ["connections"],
+    queryFn: () => api.get("/auth/connections"),
+    enabled: isAuthenticated(),
+  });
+
+  const { data: subscription } = useQuery({
+    queryKey: ["subscription"],
+    queryFn: () => api.get("/intelligence/subscription"),
+    enabled: isAuthenticated(),
+  });
+
+  const { data: systemStatus } = useQuery({
+    queryKey: ["system-status"],
+    queryFn: () => api.get("/system/status"),
+    enabled: isAuthenticated(),
+  });
+
+  const [sellerId, setSellerId] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [apiSecret, setApiSecret] = useState("");
+
+  const connectMutation = useMutation({
+    mutationFn: () => api.post("/auth/connect-store", { sellerId, apiKey, apiSecret }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["connections"] });
+      alert("Mağaza bağlandı!");
+    },
+  });
+
+  const user: any = profile || {};
+  const connList: any[] = Array.isArray(connections) ? connections : [];
+  const sub: any = subscription || {};
+  const sys: any = systemStatus || {};
 
   return (
     <>
       <div className="page-header">
         <h1 className="page-title">⚙️ Ayarlar</h1>
-        <p className="page-subtitle">
-          API bağlantıları, bildirim ayarları ve sistem konfigürasyonu
-        </p>
+        <p className="page-subtitle">Hesap, mağaza bağlantıları ve sistem durumu</p>
       </div>
 
       <div className="page-content animate-fade-in">
         <div className="grid-2">
-          {/* API Connections */}
           <div className="card">
             <div className="card-header">
-              <div className="card-title">🔗 API Bağlantıları</div>
+              <div className="card-title">👤 Hesap Bilgileri</div>
             </div>
-            {connections.map((c, i) => {
-              const st = statusMap[c.status] || {
-                class: "inactive",
-                label: c.status,
-              };
-              return (
-                <div
-                  key={i}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "16px 0",
-                    borderBottom:
-                      i < connections.length - 1
-                        ? "1px solid var(--border-default)"
-                        : "none",
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontWeight: 600,
-                        fontSize: 14,
-                        color: "var(--text-primary)",
-                        marginBottom: 4,
-                      }}
-                    >
-                      {c.name}
-                    </div>
-                    <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                      {c.desc}
-                    </div>
-                  </div>
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 12 }}
-                  >
-                    <span className={`status-badge ${st.class}`}>
-                      {st.label}
-                    </span>
-                    {c.status === "not_connected" && (
-                      <button className="btn btn-primary btn-sm">
-                        {c.action}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            <div style={{ padding: 16 }}>
+              <div style={{ marginBottom: 12 }}>
+                <span style={{ color: "var(--text-muted)", fontSize: 12 }}>Ad:</span>
+                <div style={{ fontWeight: 600, color: "var(--text-primary)" }}>{user.name || "—"}</div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <span style={{ color: "var(--text-muted)", fontSize: 12 }}>E-posta:</span>
+                <div style={{ fontWeight: 600, color: "var(--text-primary)" }}>{user.email || "—"}</div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <span style={{ color: "var(--text-muted)", fontSize: 12 }}>Rol:</span>
+                <div><span className="status-badge active">{user.role || "—"}</span></div>
+              </div>
+              <div>
+                <span style={{ color: "var(--text-muted)", fontSize: 12 }}>Plan:</span>
+                <div><span className="status-badge active">{sub.plan || sub.currentPlan || "Free"}</span></div>
+              </div>
+              <button
+                onClick={() => { clearToken(); router.push("/login"); }}
+                style={{
+                  marginTop: 20, padding: "8px 20px", borderRadius: 8,
+                  border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.1)",
+                  color: "#ef4444", cursor: "pointer", fontWeight: 600
+                }}
+              >
+                Çıkış Yap
+              </button>
+            </div>
           </div>
 
-          {/* System Info */}
-          <div>
-            <div className="card" style={{ marginBottom: 16 }}>
-              <div className="card-header">
-                <div className="card-title">📊 Sistem Durumu</div>
-              </div>
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 16 }}
-              >
-                {[
-                  { label: "API Versiyonu", value: "v0.2.0" },
-                  { label: "TypeScript Derleme", value: "✅ 0 hata" },
-                  { label: "Toplam Servis", value: "34" },
-                  { label: "API Endpoint", value: "45+" },
-                  { label: "Veritabanı Model", value: "49" },
-                  { label: "NestJS Modül", value: "15" },
-                ].map((item, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      fontSize: 13,
-                    }}
-                  >
-                    <span style={{ color: "var(--text-secondary)" }}>
-                      {item.label}
-                    </span>
-                    <span
-                      style={{ fontWeight: 600, color: "var(--text-primary)" }}
-                    >
-                      {item.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">🔗 Mağaza Bağlantısı</div>
             </div>
-
-            <div className="card" style={{ marginBottom: 16 }}>
-              <div className="card-header">
-                <div className="card-title">🔔 Bildirim Ayarları</div>
-              </div>
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 14 }}
+            <div style={{ padding: 16 }}>
+              {connList.length > 0 && (
+                <div style={{ marginBottom: 16, padding: 12, borderRadius: 8, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}>
+                  <span className="status-badge active">✅ Bağlı</span>
+                  <span style={{ marginLeft: 8, fontSize: 12, color: "var(--text-muted)" }}>
+                    Satıcı ID: {connList[0]?.sellerId || "—"}
+                  </span>
+                </div>
+              )}
+              <input
+                value={sellerId} onChange={(e) => setSellerId(e.target.value)}
+                placeholder="Seller ID" style={inputStyle}
+              />
+              <input
+                value={apiKey} onChange={(e) => setApiKey(e.target.value)}
+                placeholder="API Key" style={inputStyle}
+              />
+              <input
+                value={apiSecret} onChange={(e) => setApiSecret(e.target.value)}
+                placeholder="API Secret" type="password" style={inputStyle}
+              />
+              <button
+                onClick={() => connectMutation.mutate()}
+                disabled={connectMutation.isPending}
+                style={{
+                  marginTop: 8, padding: "10px 24px", borderRadius: 8, border: "none",
+                  background: "linear-gradient(135deg, #6366f1, #818cf8)", color: "#fff",
+                  fontWeight: 600, cursor: "pointer"
+                }}
               >
-                {[
-                  { label: "WebSocket (Anlık)", enabled: true },
-                  { label: "Telegram Bildirimleri", enabled: false },
-                  { label: "Stok Kırılma Uyarısı", enabled: true },
-                  { label: "Buybox Kaybı Uyarısı", enabled: true },
-                  { label: "Günlük Özet Rapor", enabled: false },
-                ].map((item, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      fontSize: 13,
-                    }}
-                  >
-                    <span style={{ color: "var(--text-secondary)" }}>
-                      {item.label}
-                    </span>
-                    <div
-                      style={{
-                        width: 40,
-                        height: 22,
-                        borderRadius: 11,
-                        cursor: "pointer",
-                        background: item.enabled
-                          ? "var(--accent-success)"
-                          : "var(--bg-tertiary)",
-                        position: "relative",
-                        transition: "all 0.2s",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 16,
-                          height: 16,
-                          borderRadius: "50%",
-                          background: "white",
-                          position: "absolute",
-                          top: 3,
-                          left: item.enabled ? 21 : 3,
-                          transition: "left 0.2s",
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="card">
-              <div className="card-header">
-                <div className="card-title">💳 Abonelik</div>
-              </div>
-              <div style={{ textAlign: "center", padding: "20px 0" }}>
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "var(--text-muted)",
-                    marginBottom: 8,
-                  }}
-                >
-                  Mevcut Plan
-                </div>
-                <div
-                  style={{
-                    fontSize: 24,
-                    fontWeight: 800,
-                    color: "var(--accent-primary-light)",
-                  }}
-                >
-                  Pilot
-                </div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "var(--text-muted)",
-                    marginTop: 4,
-                  }}
-                >
-                  30 gün ücretsiz deneme
-                </div>
-                <button className="btn btn-primary" style={{ marginTop: 16 }}>
-                  Planlara Bak →
-                </button>
-              </div>
+                {connectMutation.isPending ? "⏳ Bağlanıyor..." : "Mağazayı Bağla"}
+              </button>
             </div>
           </div>
         </div>
+
+        {sys && (
+          <div className="card" style={{ marginTop: 24 }}>
+            <div className="card-header">
+              <div className="card-title">🖥️ Sistem Durumu</div>
+              <span className="source-badge api">API</span>
+            </div>
+            <div className="kpi-grid">
+              <div className="kpi-card">
+                <div className="kpi-label">Uptime</div>
+                <div className="kpi-value" style={{ fontSize: 14 }}>{sys.uptime || "—"}</div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-label">Memory</div>
+                <div className="kpi-value" style={{ fontSize: 14 }}>{sys.memory?.heapUsed ? `${Math.round(sys.memory.heapUsed / 1024 / 1024)}MB` : "—"}</div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-label">PostgreSQL</div>
+                <div className="kpi-value" style={{ color: "#22c55e", fontSize: 14 }}>
+                  {sys.database === "connected" ? "✅ Bağlı" : sys.database || "—"}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
 }
+
+const inputStyle: React.CSSProperties = {
+  width: "100%", padding: "10px 14px", borderRadius: 8, marginBottom: 8,
+  border: "1px solid var(--border-primary)", background: "var(--bg-secondary)",
+  color: "var(--text-primary)", fontSize: 14, boxSizing: "border-box"
+};

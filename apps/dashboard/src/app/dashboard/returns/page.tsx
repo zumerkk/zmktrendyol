@@ -1,239 +1,132 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+import { api, isAuthenticated } from "../../../lib/api";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
 export default function ReturnsPage() {
-  const returns = [
-    {
-      id: "RT-4521",
-      orderId: "TY-891200",
-      product: "Kış Montu Premium XL",
-      reason: "Beden uymadı",
-      amount: "₺899",
-      date: "05.03.2026",
-      status: "Pending",
-    },
-    {
-      id: "RT-4520",
-      orderId: "TY-890980",
-      product: "Spor Ayakkabı Unisex",
-      reason: "Renk farklı",
-      amount: "₺549",
-      date: "04.03.2026",
-      status: "Approved",
-    },
-    {
-      id: "RT-4519",
-      orderId: "TY-890501",
-      product: "Kadın Çanta Deri",
-      reason: "Hasarlı geldi",
-      amount: "₺1,850",
-      date: "04.03.2026",
-      status: "Refunded",
-    },
-    {
-      id: "RT-4518",
-      orderId: "TY-889750",
-      product: "Erkek Gömlek Slim Fit",
-      reason: "Beden uymadı",
-      amount: "₺349",
-      date: "03.03.2026",
-      status: "Rejected",
-    },
-    {
-      id: "RT-4517",
-      orderId: "TY-889340",
-      product: "Çocuk Eşofman Takımı",
-      reason: "Vazgeçtim",
-      amount: "₺279",
-      date: "02.03.2026",
-      status: "Refunded",
-    },
-  ];
+  const router = useRouter();
+  useEffect(() => { if (!isAuthenticated()) router.push("/login"); }, [router]);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["claims"],
+    queryFn: () => api.get("/trendyol/claims/analytics?days=30"),
+    enabled: isAuthenticated(),
+  });
+
+  const claims: any = data || {};
+  const claimList: any[] = claims.recentClaims || claims.claims || [];
 
   const statusMap: Record<string, { class: string; label: string }> = {
-    Pending: { class: "pending", label: "⏳ Bekliyor" },
+    Created: { class: "pending", label: "⏳ Bekliyor" },
     Approved: { class: "active", label: "✅ Onaylandı" },
-    Refunded: { class: "active", label: "💰 İade Edildi" },
+    Resolved: { class: "active", label: "💰 Çözüldü" },
     Rejected: { class: "error", label: "❌ Reddedildi" },
   };
 
-  const reasonStats = [
-    { reason: "Beden uymadı", count: 42, pct: 38 },
-    { reason: "Renk farklı", count: 22, pct: 20 },
-    { reason: "Hasarlı geldi", count: 18, pct: 16 },
-    { reason: "Vazgeçtim", count: 15, pct: 14 },
-    { reason: "Diğer", count: 13, pct: 12 },
-  ];
+  if (isLoading) {
+    return (
+      <div className="page-content" style={{ textAlign: "center", padding: 80 }}>
+        <div style={{ fontSize: 40, marginBottom: 16 }}>⏳</div>
+        <div style={{ color: "var(--text-secondary)" }}>İadeler yükleniyor...</div>
+      </div>
+    );
+  }
 
   return (
     <>
       <div className="page-header">
         <h1 className="page-title">🔄 İade Yönetimi</h1>
-        <p className="page-subtitle">
-          İade takibi, sebep analizi ve süreç yönetimi
-        </p>
+        <p className="page-subtitle">İade takibi ve analiz — Gerçek Veriler</p>
       </div>
 
       <div className="page-content animate-fade-in">
         <div className="kpi-grid">
           <div className="kpi-card">
-            <div className="kpi-label">Aylık İade Oranı</div>
-            <div className="kpi-value">%3.2</div>
-            <span className="kpi-change positive">↓ -0.5%</span>
-            <div className="kpi-source">
-              Kaynak: <span className="source-badge api">API</span>
-            </div>
+            <div className="kpi-label">Toplam İade</div>
+            <div className="kpi-value">{claims.totalClaims || claimList.length || 0}</div>
+            <div className="kpi-source">Kaynak: <span className="source-badge api">API</span></div>
           </div>
           <div className="kpi-card">
-            <div className="kpi-label">Bekleyen İade</div>
-            <div
-              className="kpi-value"
-              style={{ color: "var(--accent-warning)" }}
-            >
-              1
+            <div className="kpi-label">İade Oranı</div>
+            <div className="kpi-value" style={{ color: "var(--accent-danger)" }}>
+              %{(claims.returnRate || 0).toFixed(1)}
             </div>
-            <div className="kpi-source">
-              Kaynak: <span className="source-badge api">API</span>
-            </div>
+            <div className="kpi-source">Kaynak: <span className="source-badge zmk-engine">ZMK</span></div>
           </div>
           <div className="kpi-card">
-            <div className="kpi-label">Bu Ay İade Tutarı</div>
-            <div
-              className="kpi-value"
-              style={{ color: "var(--accent-danger)" }}
-            >
-              ₺3,926
+            <div className="kpi-label">Toplam İade Tutarı</div>
+            <div className="kpi-value" style={{ color: "var(--accent-danger)" }}>
+              ₺{(claims.totalRefundAmount || 0).toLocaleString("tr-TR")}
             </div>
-            <div className="kpi-source">
-              Kaynak: <span className="source-badge api">API</span>
-            </div>
+            <div className="kpi-source">Kaynak: <span className="source-badge api">API</span></div>
           </div>
         </div>
 
         <div className="grid-2">
-          {/* Returns Table */}
           <div className="card">
             <div className="card-header">
               <div className="card-title">Son İadeler</div>
               <span className="source-badge api">API</span>
             </div>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>İade No</th>
-                  <th>Ürün</th>
-                  <th>Sebep</th>
-                  <th>Tutar</th>
-                  <th>Durum</th>
-                </tr>
-              </thead>
-              <tbody>
-                {returns.map((r) => {
-                  const st = statusMap[r.status] || {
-                    class: "inactive",
-                    label: r.status,
-                  };
-                  return (
-                    <tr key={r.id}>
-                      <td
-                        style={{
-                          fontFamily: "monospace",
-                          fontSize: 12,
-                          fontWeight: 600,
-                        }}
-                      >
-                        {r.id}
-                      </td>
-                      <td style={{ fontWeight: 500 }}>{r.product}</td>
-                      <td style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                        {r.reason}
-                      </td>
-                      <td
-                        style={{
-                          fontWeight: 700,
-                          color: "var(--accent-danger)",
-                        }}
-                      >
-                        {r.amount}
-                      </td>
-                      <td>
-                        <span className={`status-badge ${st.class}`}>
-                          {st.label}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            {claimList.length === 0 ? (
+              <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
+                Henüz iade verisi yok — Senkronize edin
+              </div>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr><th>Ürün</th><th>Sebep</th><th>Tutar</th><th>Durum</th></tr>
+                </thead>
+                <tbody>
+                  {claimList.slice(0, 10).map((c: any, i: number) => {
+                    const st = statusMap[c.status] || { class: "inactive", label: c.status };
+                    return (
+                      <tr key={i}>
+                        <td style={{ fontWeight: 500 }}>{c.productTitle || c.claimType || "—"}</td>
+                        <td style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                          {c.reason || c.claimType || "—"}
+                        </td>
+                        <td style={{ fontWeight: 700, color: "var(--accent-danger)" }}>
+                          ₺{Number(c.amount || c.totalPrice || 0).toLocaleString("tr-TR")}
+                        </td>
+                        <td>
+                          <span className={`status-badge ${st.class}`}>{st.label}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
 
-          {/* Reason Analysis */}
           <div className="card">
             <div className="card-header">
-              <div className="card-title">İade Sebep Analizi</div>
-              <span className="source-badge estimate">ESTIMATE</span>
+              <div className="card-title">İade Sebep Dağılımı</div>
+              <span className="source-badge zmk-engine">ZMK ENGINE</span>
             </div>
-            {reasonStats.map((r) => (
-              <div key={r.reason} style={{ marginBottom: 16 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: 6,
-                    fontSize: 13,
-                  }}
-                >
-                  <span style={{ color: "var(--text-secondary)" }}>
-                    {r.reason}
-                  </span>
-                  <span
-                    style={{ fontWeight: 700, color: "var(--text-primary)" }}
-                  >
-                    %{r.pct}
-                  </span>
+            {claims.byReason && Object.keys(claims.byReason).length > 0 ? (
+              Object.entries(claims.byReason).map(([reason, count]: [string, any]) => (
+                <div key={reason} style={{ marginBottom: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13 }}>
+                    <span style={{ color: "var(--text-secondary)" }}>{reason}</span>
+                    <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{count}</span>
+                  </div>
+                  <div style={{ height: 6, borderRadius: 3, background: "var(--bg-tertiary)", overflow: "hidden" }}>
+                    <div style={{
+                      width: `${Math.min((count / (claims.totalClaims || 1)) * 100, 100)}%`,
+                      height: "100%", borderRadius: 3, background: "var(--accent-primary)"
+                    }} />
+                  </div>
                 </div>
-                <div
-                  style={{
-                    height: 6,
-                    borderRadius: 3,
-                    background: "var(--bg-tertiary)",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${r.pct}%`,
-                      height: "100%",
-                      borderRadius: 3,
-                      background:
-                        r.pct > 30
-                          ? "var(--accent-danger)"
-                          : r.pct > 15
-                            ? "var(--accent-warning)"
-                            : "var(--accent-primary)",
-                    }}
-                  />
-                </div>
+              ))
+            ) : (
+              <div style={{ padding: 24, textAlign: "center", color: "var(--text-muted)" }}>
+                İade sebep verisi henüz oluşmadı
               </div>
-            ))}
-            <div
-              style={{
-                marginTop: 20,
-                padding: 12,
-                borderRadius: 8,
-                background: "rgba(99, 102, 241, 0.08)",
-                border: "1px solid var(--border-accent)",
-                fontSize: 12,
-                color: "var(--text-secondary)",
-              }}
-            >
-              💡{" "}
-              <strong style={{ color: "var(--accent-primary-light)" }}>
-                AI Önerisi:
-              </strong>{" "}
-              Beden tablosunu ürün açıklamalarına eklemek iade oranını %15
-              düşürebilir.
-            </div>
+            )}
           </div>
         </div>
       </div>
