@@ -234,9 +234,10 @@ export class FinanceService {
   /**
    * Commission verification — compare actual vs expected commission
    */
-  async verifyCommissions(tenantId: string, days = 30) {
+  async verifyCommissions(tenantId: string, days: number | string = 30) {
+    const numDays = Number(days) || 30;
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    startDate.setDate(startDate.getDate() - numDays);
 
     const commissionTxs = await this.prisma.financialTransaction.findMany({
       where: {

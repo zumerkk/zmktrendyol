@@ -108,6 +108,9 @@ export class KeywordResearchService {
     seedKeyword: string,
     limit = 20,
   ) {
+    if (!seedKeyword || typeof seedKeyword !== 'string') {
+      return { suggestions: [], message: 'seed parametresi gerekli (?seed=kelime)' };
+    }
     // Generate variations
     const variations = this.generateKeywordVariations(seedKeyword);
 

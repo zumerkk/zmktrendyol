@@ -34,12 +34,26 @@ export class ProductsService {
       totalProducts = res.data?.totalElements || 0;
 
       for (const p of products) {
+        // Use stockCode if non-empty, otherwise barcode, otherwise ty-{contentId}
+        const productId = (p.stockCode && p.stockCode.trim()) || p.barcode || `ty-${p.productContentId || p.id}`;
+
+        // Safely convert trendyolId — API may return numeric or string hash
+        let trendyolId: bigint | null = null;
+        try {
+          const numericId = p.productContentId || p.productCode;
+          if (numericId && /^\d+$/.test(String(numericId))) {
+            trendyolId = BigInt(numericId);
+          }
+        } catch {
+          // Skip if conversion fails
+        }
+
         await this.prisma.product.upsert({
-          where: { id: p.stockCode || `ty-${p.id}` },
+          where: { id: productId },
           create: {
-            id: p.stockCode || `ty-${p.id}`,
+            id: productId,
             tenantId,
-            trendyolId: BigInt(p.id),
+            trendyolId,
             barcode: p.barcode,
             title: p.title,
             brand: p.brand,

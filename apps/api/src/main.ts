@@ -1,6 +1,11 @@
 import * as path from "path";
 import * as dotenv from "dotenv";
 
+// BigInt JSON serialization support (required for Prisma BigInt fields)
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+
 // Load .env only in development (Render provides env vars directly)
 if (process.env.NODE_ENV !== "production") {
   dotenv.config({ path: path.resolve(__dirname, "..", "..", "..", ".env") });

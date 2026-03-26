@@ -106,9 +106,10 @@ export class ClaimsService {
   /**
    * Get return analytics — reason breakdown, cost analysis
    */
-  async getReturnAnalytics(tenantId: string, days = 30) {
+  async getReturnAnalytics(tenantId: string, days: number | string = 30) {
+    const numDays = Number(days) || 30;
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    startDate.setDate(startDate.getDate() - numDays);
 
     const returns = await this.prisma.return.findMany({
       where: {
