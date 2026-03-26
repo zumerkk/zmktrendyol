@@ -1,6 +1,10 @@
 import * as path from "path";
 import * as dotenv from "dotenv";
-dotenv.config({ path: path.resolve(__dirname, "..", "..", "..", ".env") });
+
+// Load .env only in development (Render provides env vars directly)
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config({ path: path.resolve(__dirname, "..", "..", "..", ".env") });
+}
 
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
@@ -19,11 +23,13 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix("api");
 
-  // CORS
+  // CORS — allow dashboard, extension, and all Render domains
   app.enableCors({
     origin: [
       process.env.DASHBOARD_URL || "http://localhost:3000",
       "chrome-extension://*",
+      /\.onrender\.com$/,
+      /localhost/,
     ],
     credentials: true,
   });
@@ -56,10 +62,12 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("api/docs", app, document);
 
-  const port = process.env.API_PORT || 4000;
-  await app.listen(port);
-  console.log(`🚀 ZMK API running on http://localhost:${port}`);
-  console.log(`📚 Swagger docs at http://localhost:${port}/api/docs`);
-  console.log(`🔌 WebSocket server ready on ws://localhost:${port}`);
+  // Render uses PORT, local uses API_PORT
+  const port = process.env.PORT || process.env.API_PORT || 4000;
+  await app.listen(port, "0.0.0.0");
+  console.log(`🚀 ZMK API running on port ${port}`);
+  console.log(`📚 Swagger docs at /api/docs`);
+  console.log(`🔌 WebSocket server ready`);
 }
 bootstrap();
+
