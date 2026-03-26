@@ -17,7 +17,7 @@ export class MarketplaceHubService {
     {
       id: "trendyol",
       name: "Trendyol",
-      apiBase: "https://api.trendyol.com/sapigw",
+      apiBase: "https://apigw.trendyol.com",
       status: "active",
     },
     {

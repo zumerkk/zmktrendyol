@@ -40,7 +40,7 @@ export class TrendyolService {
     }
 
     const baseURL =
-      process.env.TRENDYOL_API_BASE_URL || "https://api.trendyol.com/sapigw";
+      process.env.TRENDYOL_API_BASE_URL || "https://apigw.trendyol.com";
 
     const apiKey = decrypt(connection.apiKeyRef);
     const apiSecret = decrypt(connection.apiSecretRef);

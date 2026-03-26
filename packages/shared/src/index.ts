@@ -151,7 +151,7 @@ export interface ApiResponse<T = unknown> {
 
 // ─── Constants ──────────────────────────────
 export const TRENDYOL_API = {
-    PROD_BASE: 'https://api.trendyol.com/sapigw',
+    PROD_BASE: 'https://apigw.trendyol.com',
     STAGE_BASE: 'https://stageapi.trendyol.com/stagesapigw',
     RATE_LIMIT: { maxRequests: 50, windowSeconds: 10 },
     ORDER_RATE_LIMIT: { maxRequests: 1000, windowMinutes: 1 },
