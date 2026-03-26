@@ -1,0 +1,41 @@
+{
+    "manifest_version": 3,
+    "name": "ZMK Trendyol Zekâ Paneli",
+    "version": "0.1.0",
+    "description": "Trendyol ürün sayfalarında akıllı analiz paneli — KPI, fiyat geçmişi, rakip sinyalleri ve AI aksiyonlar",
+    "permissions": [
+        "activeTab",
+        "storage"
+    ],
+    "host_permissions": [
+        "https://www.trendyol.com/*"
+    ],
+    "background": {
+        "service_worker": "background/service-worker.js",
+        "type": "module"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://www.trendyol.com/*"
+            ],
+            "js": [
+                "content/content-script.js"
+            ],
+            "css": [
+                "content/overlay.css"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
+    "action": {
+        "default_popup": "popup/popup.html",
+        "default_title": "ZMK Trendyol Zekâ Paneli"
+    },
+    "icons": {
+        "16": "icons/icon-16.png",
+        "32": "icons/icon-32.png",
+        "48": "icons/icon-48.png",
+        "128": "icons/icon-128.png"
+    }
+}

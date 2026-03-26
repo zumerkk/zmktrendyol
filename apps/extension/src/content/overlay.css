@@ -1,0 +1,383 @@
+/* ─── ZMK Extension Overlay Styles ─── */
+/* Injected into Trendyol pages — scoped with zmk- prefix */
+
+#zmk-overlay-root {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Toggle Button */
+.zmk-toggle-btn {
+    position: fixed;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 12px 0 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2147483646;
+    box-shadow: -2px 2px 12px rgba(99, 102, 241, 0.4);
+    transition: all 0.3s ease;
+}
+
+.zmk-toggle-btn:hover {
+    width: 52px;
+    box-shadow: -4px 2px 20px rgba(99, 102, 241, 0.6);
+}
+
+.zmk-toggle-btn.zmk-active {
+    right: 360px;
+}
+
+.zmk-toggle-icon {
+    color: white;
+    font-weight: 800;
+    font-size: 18px;
+}
+
+/* Overlay Panel */
+.zmk-overlay-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 360px;
+    height: 100vh;
+    background: #0a0e1a;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 2147483647;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
+    animation: zmk-slideIn 0.3s ease;
+}
+
+.zmk-hidden {
+    display: none !important;
+}
+
+@keyframes zmk-slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Header */
+.zmk-overlay-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(17, 24, 39, 0.8);
+    backdrop-filter: blur(8px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.zmk-header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.zmk-brand-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #6366f1, #a78bfa);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 800;
+    font-size: 14px;
+}
+
+.zmk-brand-text {
+    font-weight: 700;
+    font-size: 14px;
+    color: #f1f5f9;
+}
+
+.zmk-header-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.zmk-icon-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    color: #94a3b8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.zmk-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #f1f5f9;
+}
+
+/* Content */
+.zmk-overlay-content {
+    padding: 16px;
+    flex: 1;
+}
+
+.zmk-section {
+    margin-bottom: 0;
+}
+
+/* Auth */
+.zmk-auth-notice {
+    text-align: center;
+    padding: 40px 20px;
+    color: #94a3b8;
+}
+
+.zmk-auth-icon {
+    font-size: 32px;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.zmk-auth-notice p {
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+/* Cards */
+.zmk-card {
+    background: rgba(26, 34, 54, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.zmk-card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #f1f5f9;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* KPI Row */
+.zmk-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.zmk-kpi-item {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.zmk-kpi-label {
+    font-size: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.zmk-kpi-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #f1f5f9;
+}
+
+/* Chart */
+.zmk-chart-area {
+    margin-bottom: 8px;
+}
+
+.zmk-price-extremes {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.zmk-price-extremes strong {
+    color: #f1f5f9;
+}
+
+/* Source badges */
+.zmk-source-badge {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.zmk-source-api {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+}
+
+.zmk-source-public {
+    background: rgba(34, 211, 238, 0.15);
+    color: #22d3ee;
+}
+
+.zmk-source-estimate {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
+/* Disclaimer */
+.zmk-disclaimer {
+    font-size: 10px;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.08);
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin-bottom: 10px;
+}
+
+/* Match */
+.zmk-match-info {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.zmk-match-success {
+    color: #10b981;
+}
+
+.zmk-match-detail {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+.zmk-match-none {
+    color: #64748b;
+    font-size: 12px;
+}
+
+/* Actions */
+.zmk-action-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.zmk-action-btn {
+    padding: 12px 10px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.zmk-action-btn:hover {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.3);
+    color: #f1f5f9;
+    transform: translateY(-1px);
+}
+
+/* Buttons */
+.zmk-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.zmk-btn-primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.zmk-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+/* Competitor list */
+.zmk-competitor-list {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.zmk-empty {
+    text-align: center;
+    padding: 16px;
+    color: #64748b;
+}
+
+/* Spinner */
+.zmk-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(99, 102, 241, 0.2);
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: zmk-spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+@keyframes zmk-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Scrollbar */
+.zmk-overlay-panel::-webkit-scrollbar {
+    width: 4px;
+}
+
+.zmk-overlay-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.zmk-overlay-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}

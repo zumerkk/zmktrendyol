@@ -1,0 +1,66 @@
+services:
+  # ─── API Backend ─────────────────────────────
+  - type: web
+    name: zmk-api
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: cd apps/api && npm install && npx prisma generate && npx nest build
+    startCommand: cd apps/api && npx prisma db push --accept-data-loss && node dist/main.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_PORT
+        value: "4000"
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: TRENDYOL_API_BASE_URL
+        value: "https://api.trendyol.com/sapigw"
+      - key: TRENDYOL_SELLER_ID
+        sync: false
+      - key: TRENDYOL_API_KEY
+        sync: false
+      - key: TRENDYOL_API_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GOOGLE_AI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+
+  # ─── Dashboard Frontend ─────────────────────
+  - type: web
+    name: zmk-dashboard
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: cd apps/dashboard && npm install && npm run build
+    startCommand: cd apps/dashboard && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: zmk-api
+          type: web
+          property: host
+
+databases:
+  - name: zmk-postgres
+    plan: free
+    databaseName: zmktrendyol
+    user: zmkuser
+    region: frankfurt

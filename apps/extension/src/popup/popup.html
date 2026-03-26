@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZMK Trendyol Zekâ Paneli</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <div class="popup-header">
+      <div class="popup-brand">
+        <div class="popup-brand-icon">Z</div>
+        <div>
+          <div class="popup-brand-name">ZMK Platform</div>
+          <div class="popup-brand-sub">Trendyol Zekâ Paneli</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auth Section -->
+    <div id="popup-auth" class="popup-section">
+      <div class="popup-form">
+        <div class="popup-field">
+          <label for="email">E-posta</label>
+          <input type="email" id="email" placeholder="email@example.com" />
+        </div>
+        <div class="popup-field">
+          <label for="password">Şifre</label>
+          <input type="password" id="password" placeholder="••••••••" />
+        </div>
+        <button id="login-btn" class="popup-btn popup-btn-primary">Giriş Yap</button>
+        <div id="login-error" class="popup-error hidden"></div>
+      </div>
+    </div>
+
+    <!-- Logged In Section -->
+    <div id="popup-user" class="popup-section hidden">
+      <div class="popup-user-info">
+        <div class="popup-avatar" id="user-avatar">U</div>
+        <div>
+          <div class="popup-user-name" id="user-name">Kullanıcı</div>
+          <div class="popup-user-email" id="user-email">email@example.com</div>
+        </div>
+      </div>
+      <div class="popup-status">
+        <span class="popup-status-dot active"></span>
+        <span>Bağlantı aktif</span>
+      </div>
+      <div class="popup-actions">
+        <a href="http://localhost:3000/dashboard" target="_blank" class="popup-btn popup-btn-secondary">
+          📊 Dashboard'u Aç
+        </a>
+        <button id="logout-btn" class="popup-btn popup-btn-outline">Çıkış Yap</button>
+      </div>
+    </div>
+
+    <div class="popup-footer">
+      <span>ZMK Agency © 2026</span>
+      <span>v0.1.0</span>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

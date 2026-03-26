@@ -1,0 +1,28 @@
+{
+  "name": "zmk-trendyol-platform",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "npm@11.5.1",
+  "description": "ZMK Agency — Trendyol Pazarlamacı Botu + Mağaza Zekâ Platformu",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "turbo": "^2.8.17"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^5.22.0",
+    "@types/pg": "^8.20.0",
+    "pg": "^8.20.0",
+    "telegraf": "^4.16.3"
+  }
+}

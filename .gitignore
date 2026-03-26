@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+dist/
+build/
+.next/
+out/
+
+# Environment (NEVER commit secrets)
+.env
+.env.local
+.env.*.local
+apps/api/.env
+apps/dashboard/.env
+apps/dashboard/.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+
+# Prisma
+apps/api/prisma/*.db
+
+# Extension build
+apps/extension/dist/
+
+# Turbo
+.turbo/
+
+# Gemini/AI agent
+.gemini/

@@ -1,0 +1,1075 @@
+// ─── Prisma Schema ──────────────────────────────
+// ZMK Trendyol Platform — Database Schema
+// PostgreSQL + TimescaleDB
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Auth & Tenancy ─────────────────────────────
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users             User[]
+  sellerConnections SellerConnection[]
+  products          Product[]
+  orders            Order[]
+  returns           Return[]
+  kpiDaily          KpiDaily[]
+  kpiMonthly        KpiMonthly[]
+  competitorProducts CompetitorProduct[]
+  aiRuns            AiRun[]
+  auditLogs         AuditLog[]
+  sessions          Session[]
+  syncJobs          SyncJob[]
+  alertRules        AlertRule[]
+  pricingRules      PricingRule[]
+  adCampaigns       AdCampaign[]
+  scrapeTargets     ScrapeTarget[]
+  marketSnapshots   MarketSnapshot[]
+  reviewAnalyses    ReviewAnalysis[]
+  notifications     Notification[]
+  telegramChats     TelegramChat[]
+  abTests           AbTest[]
+  productResearch   ProductResearch[]
+  warRoomEntries    WarRoomEntry[]
+  chatSessions      ChatSession[]
+  marketplaceConnections MarketplaceConnection[]
+  subscriptions     Subscription[]
+  kpiSkuDaily       KpiSkuDaily[]
+  actionableInsights ActionableInsight[]
+  extensionJobs     ExtensionJob[]
+  automationRules   AutomationRule[]
+  financialTransactions FinancialTransaction[]
+  settlementPeriods     SettlementPeriod[]
+  keywordTrackings      KeywordTracking[]
+  searchVolumeEstimates SearchVolumeEstimate[]
+
+  @@map("tenants")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  role         Role     @default(analyst)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  auditLogs AuditLog[]
+  sessions  Session[]
+
+  @@map("users")
+}
+
+enum Role {
+  owner
+  admin
+  analyst
+}
+
+model SellerConnection {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  sellerId     String   @map("seller_id")
+  apiKeyRef    String   @map("api_key_ref")    // encrypted
+  apiSecretRef String   @map("api_secret_ref") // encrypted
+  status       String   @default("active")
+  lastSyncAt   DateTime? @map("last_sync_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("seller_connections")
+}
+
+// ─── Products ───────────────────────────────────
+
+model Product {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  trendyolId   BigInt?  @map("trendyol_id")
+  barcode      String?
+  title        String
+  brand        String?
+  categoryId   Int?     @map("category_id")
+  categoryName String?  @map("category_name")
+  imageUrl     String?  @map("image_url")
+  status       String   @default("active")
+  approved     Boolean  @default(false)
+  onSale       Boolean  @default(false) @map("on_sale")
+  costPrice    Decimal? @map("cost_price") @db.Decimal(12, 2)
+  commissionRate Decimal? @map("commission_rate") @db.Decimal(5, 2) // Yüzde olarak (örn: 15.5)
+  shippingCost Decimal? @map("shipping_cost") @db.Decimal(10, 2)
+  packagingCost Decimal? @map("packaging_cost") @db.Decimal(10, 2)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id])
+  variants ProductVariant[]
+  orderItems OrderItem[]
+  returnItems ReturnItem[]
+  priceHistory PriceHistory[]
+  inventoryHistory InventoryHistory[]
+  alertEvents AlertEvent[]
+  pricingRules PricingRule[]
+  abTests      AbTest[]
+  kpiSkuDaily  KpiSkuDaily[]
+
+  @@map("products")
+}
+
+model ProductVariant {
+  id        String   @id @default(uuid())
+  productId String   @map("product_id")
+  sku       String?
+  barcode   String?
+  attributes Json?   @db.JsonB
+  listPrice  Decimal @map("list_price") @db.Decimal(12, 2)
+  salePrice  Decimal @map("sale_price") @db.Decimal(12, 2)
+  quantity   Int     @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("product_variants")
+}
+
+model Category {
+  id       Int    @id
+  name     String
+  parentId Int?   @map("parent_id")
+  path     String?
+
+  @@map("categories")
+}
+
+model Brand {
+  id   Int    @id
+  name String
+
+  @@map("brands")
+}
+
+// ─── Time-Series ────────────────────────────────
+
+model PriceHistory {
+  id        String   @id @default(uuid())
+  time      DateTime @default(now())
+  productId String   @map("product_id")
+  variantId String?  @map("variant_id")
+  listPrice Decimal  @map("list_price") @db.Decimal(12, 2)
+  salePrice Decimal  @map("sale_price") @db.Decimal(12, 2)
+  changedBy String?  @map("changed_by")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("price_history")
+}
+
+model InventoryHistory {
+  id        String   @id @default(uuid())
+  time      DateTime @default(now())
+  productId String   @map("product_id")
+  variantId String?  @map("variant_id")
+  quantity  Int
+  changedBy String?  @map("changed_by")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("inventory_history")
+}
+
+// ─── Orders ─────────────────────────────────────
+
+model Order {
+  id                 String   @id @default(uuid())
+  tenantId           String   @map("tenant_id")
+  trendyolOrderNumber String? @map("trendyol_order_number")
+  packageNumber      String?  @map("package_number")
+  status             String
+  customerNamePseudo String?  @map("customer_name_pseudo")
+  orderDate          DateTime @map("order_date")
+  totalPrice         Decimal  @map("total_price") @db.Decimal(12, 2)
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant      @relation(fields: [tenantId], references: [id])
+  items  OrderItem[]
+  returns Return[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String  @map("order_id")
+  productId String? @map("product_id")
+  barcode   String?
+  quantity  Int
+  unitPrice Decimal @map("unit_price") @db.Decimal(12, 2)
+  amount    Decimal @db.Decimal(12, 2)
+
+  order   Order    @relation(fields: [orderId], references: [id])
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+// ─── Returns ────────────────────────────────────
+
+model Return {
+  id        String   @id @default(uuid())
+  orderId   String?  @map("order_id")
+  tenantId  String   @map("tenant_id")
+  status    String
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id])
+  order  Order?       @relation(fields: [orderId], references: [id])
+  items  ReturnItem[]
+
+  @@map("returns")
+}
+
+model ReturnItem {
+  id           String  @id @default(uuid())
+  returnId     String  @map("return_id")
+  productId    String? @map("product_id")
+  quantity     Int
+  refundAmount Decimal @map("refund_amount") @db.Decimal(12, 2)
+
+  returnRec Return   @relation(fields: [returnId], references: [id])
+  product   Product? @relation(fields: [productId], references: [id])
+
+  @@map("return_items")
+}
+
+// ─── KPI Aggregates ─────────────────────────────
+
+model KpiDaily {
+  id           String  @id @default(uuid())
+  date         DateTime @db.Date
+  tenantId     String   @map("tenant_id")
+  grossRevenue Decimal  @map("gross_revenue") @db.Decimal(14, 2)
+  units        Int
+  orders       Int
+  returns      Int      @default(0)
+  avgBasket    Decimal  @map("avg_basket") @db.Decimal(12, 2)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([date, tenantId])
+  @@map("kpi_daily")
+}
+
+model KpiMonthly {
+  id           String  @id @default(uuid())
+  month        DateTime @db.Date
+  tenantId     String   @map("tenant_id")
+  grossRevenue Decimal  @map("gross_revenue") @db.Decimal(14, 2)
+  units        Int
+  orders       Int
+  returnRate   Decimal  @map("return_rate") @db.Decimal(5, 2)
+  avgBasket    Decimal  @map("avg_basket") @db.Decimal(12, 2)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([month, tenantId])
+  @@map("kpi_monthly")
+}
+
+model KpiSkuDaily {
+  id               String   @id @default(uuid())
+  date             DateTime @db.Date
+  tenantId         String   @map("tenant_id")
+  productId        String   @map("product_id")
+  unitsSold        Int      @default(0) @map("units_sold")
+  unitsReturned    Int      @default(0) @map("units_returned")
+  grossRevenue     Decimal  @default(0) @map("gross_revenue") @db.Decimal(14, 2)
+  totalCost        Decimal  @default(0) @map("total_cost") @db.Decimal(14, 2)
+  totalCommission  Decimal  @default(0) @map("total_commission") @db.Decimal(14, 2)
+  totalShipping    Decimal  @default(0) @map("total_shipping") @db.Decimal(14, 2)
+  totalAdSpend     Decimal  @default(0) @map("total_ad_spend") @db.Decimal(14, 2)
+  totalReturnCost  Decimal  @default(0) @map("total_return_cost") @db.Decimal(14, 2)
+  netProfit        Decimal  @default(0) @map("net_profit") @db.Decimal(14, 2)
+  roi              Decimal? @db.Decimal(8, 2)
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([date, tenantId, productId])
+  @@map("kpi_sku_daily")
+}
+
+// ─── Command Center / Actionable Insights ───────
+
+model ActionableInsight {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  type        String   // 'loss_making', 'out_of_stock', 'buybox_lost', 'review_risk'
+  priority    Int      // 1 (Critical), 2 (High), 3 (Medium), 4 (Low)
+  title       String
+  description String
+  suggestedAction String @map("suggested_action")
+  metadata    Json?    // e.g., { productId, competitorId, currentPrice }
+  isCompleted Boolean  @default(false) @map("is_completed")
+  isDismissed Boolean  @default(false) @map("is_dismissed")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  @@map("actionable_insights")
+}
+
+// ─── Competitor ─────────────────────────────────
+
+model CompetitorProduct {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  trendyolUrl  String   @map("trendyol_url")
+  title        String?
+  brand        String?
+  category     String?
+  trackedSince DateTime @default(now()) @map("tracked_since")
+
+  tenant           Tenant               @relation(fields: [tenantId], references: [id])
+  snapshots        CompetitorSnapshot[]
+  stockProbes      StockProbe[]
+  buyboxSnapshots  BuyboxSnapshot[]
+  reviewAnalyses   ReviewAnalysis[]
+
+  @@map("competitor_products")
+}
+
+model CompetitorSnapshot {
+  id                   String   @id @default(uuid())
+  competitorProductId  String   @map("competitor_product_id")
+  time                 DateTime @default(now())
+  price                Decimal? @db.Decimal(12, 2)
+  rating               Decimal? @db.Decimal(3, 2)
+  reviewCount          Int?     @map("review_count")
+  inStock              Boolean? @map("in_stock")
+  deliveryInfo         String?  @map("delivery_info")
+
+  competitorProduct CompetitorProduct @relation(fields: [competitorProductId], references: [id])
+
+  @@map("competitor_snapshots")
+}
+
+// ─── AI ─────────────────────────────────────────
+
+model AiPrompt {
+  id       String  @id @default(uuid())
+  name     String
+  template String  @db.Text
+  version  Int     @default(1)
+  isActive Boolean @default(true) @map("is_active")
+
+  runs AiRun[]
+
+  @@map("ai_prompts")
+}
+
+model AiRun {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  promptId   String?  @map("prompt_id")
+  input      Json     @db.JsonB
+  output     Json     @db.JsonB
+  provider   String
+  model      String
+  tokensUsed Int      @map("tokens_used")
+  cost       Decimal  @db.Decimal(8, 4)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant Tenant    @relation(fields: [tenantId], references: [id])
+  prompt AiPrompt? @relation(fields: [promptId], references: [id])
+
+  @@map("ai_runs")
+}
+
+// ─── Audit ──────────────────────────────────────
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  userId      String?  @map("user_id")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String?  @map("entity_id")
+  beforeValue Json?    @map("before_value") @db.JsonB
+  afterValue  Json?    @map("after_value") @db.JsonB
+  ipAddress   String?  @map("ip_address")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model Session {
+  id        String    @id @default(uuid())
+  tenantId  String    @map("tenant_id")
+  userId    String    @map("user_id")
+  ipAddress String?   @map("ip_address")
+  userAgent String?   @map("user_agent")
+  startedAt DateTime  @default(now()) @map("started_at")
+  endedAt   DateTime? @map("ended_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("sessions")
+}
+
+// ─── Sync ───────────────────────────────────────
+
+model SyncJob {
+  id       String  @id @default(uuid())
+  tenantId String  @map("tenant_id")
+  type     String
+  cron     String?
+  isActive Boolean @default(true) @map("is_active")
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id])
+  runs   SyncJobRun[]
+
+  @@map("sync_jobs")
+}
+
+model SyncJobRun {
+  id               String    @id @default(uuid())
+  jobId            String    @map("job_id")
+  status           String
+  startedAt        DateTime  @default(now()) @map("started_at")
+  endedAt          DateTime? @map("ended_at")
+  recordsProcessed Int       @default(0) @map("records_processed")
+  error            String?   @db.Text
+
+  job SyncJob @relation(fields: [jobId], references: [id])
+
+  @@map("sync_job_runs")
+}
+
+// ─── Alerts ─────────────────────────────────────
+
+model AlertRule {
+  id         String  @id @default(uuid())
+  tenantId   String  @map("tenant_id")
+  type       String
+  conditions Json    @db.JsonB
+  isActive   Boolean @default(true) @map("is_active")
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id])
+  events AlertEvent[]
+
+  @@map("alert_rules")
+}
+
+model AlertEvent {
+  id             String    @id @default(uuid())
+  ruleId         String    @map("rule_id")
+  productId      String?   @map("product_id")
+  message        String
+  severity       String    @default("info")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  acknowledgedAt DateTime? @map("acknowledged_at")
+
+  rule    AlertRule @relation(fields: [ruleId], references: [id])
+  product Product?  @relation(fields: [productId], references: [id])
+
+  @@map("alert_events")
+}
+
+// ─── Extension ──────────────────────────────────
+
+model ExtensionSession {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("extension_sessions")
+}
+
+model PageContextCache {
+  id          String   @id @default(uuid())
+  trendyolUrl String   @map("trendyol_url")
+  productId   String?  @map("product_id")
+  matchedAt   DateTime @default(now()) @map("matched_at")
+  data        Json     @db.JsonB
+
+  @@map("page_context_cache")
+}
+
+// ─── Stock Shadow Tracking (Gölge Stok Takibi) ─
+
+model StockProbe {
+  id                  String   @id @default(uuid())
+  competitorProductId String   @map("competitor_product_id")
+  intervalMinutes     Int      @default(60) @map("interval_minutes")
+  isActive            Boolean  @default(true) @map("is_active")
+  lastProbedAt        DateTime? @map("last_probed_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  competitorProduct CompetitorProduct @relation(fields: [competitorProductId], references: [id])
+  results           StockProbeResult[]
+
+  @@map("stock_probes")
+}
+
+model StockProbeResult {
+  id           String   @id @default(uuid())
+  probeId      String   @map("probe_id")
+  time         DateTime @default(now())
+  stockCount   Int?     @map("stock_count")
+  isAvailable  Boolean  @map("is_available")
+  deltaFromPrev Int?    @map("delta_from_prev") // negatif = satış
+  method       String   @default("cart_probe") // cart_probe | page_signal
+  rawResponse  Json?    @map("raw_response") @db.JsonB
+
+  probe StockProbe @relation(fields: [probeId], references: [id])
+
+  @@map("stock_probe_results")
+}
+
+// ─── Buybox & Dynamic Pricing ───────────────────
+
+model BuyboxSnapshot {
+  id                  String   @id @default(uuid())
+  competitorProductId String   @map("competitor_product_id")
+  time                DateTime @default(now())
+  buyboxHolder        String?  @map("buybox_holder") // satıcı adı
+  buyboxPrice         Decimal? @map("buybox_price") @db.Decimal(12, 2)
+  totalSellers        Int?     @map("total_sellers")
+  ourPosition         Int?     @map("our_position") // bizim sıramız
+  isOurBuybox         Boolean  @default(false) @map("is_our_buybox")
+  sellersData         Json?    @map("sellers_data") @db.JsonB // tüm satıcı listesi
+
+  competitorProduct CompetitorProduct @relation(fields: [competitorProductId], references: [id])
+
+  @@map("buybox_snapshots")
+}
+
+model PricingRule {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  productId    String   @map("product_id")
+  isActive     Boolean  @default(true) @map("is_active")
+  strategy     String   @default("undercut") // undercut | match | margin_target
+  minPrice     Decimal  @map("min_price") @db.Decimal(12, 2)
+  maxPrice     Decimal  @map("max_price") @db.Decimal(12, 2)
+  targetMargin Decimal? @map("target_margin") @db.Decimal(5, 2) // yüzde
+  undercutAmount Decimal? @map("undercut_amount") @db.Decimal(12, 2) // kuruş
+  autoApply    Boolean  @default(false) @map("auto_apply")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant          @relation(fields: [tenantId], references: [id])
+  product Product         @relation(fields: [productId], references: [id])
+  actions PricingAction[]
+
+  @@map("pricing_rules")
+}
+
+model PricingAction {
+  id          String   @id @default(uuid())
+  ruleId      String   @map("rule_id")
+  oldPrice    Decimal  @map("old_price") @db.Decimal(12, 2)
+  newPrice    Decimal  @map("new_price") @db.Decimal(12, 2)
+  reason      String   // "buybox_lost" | "competitor_undercut" | "margin_adjustment"
+  status      String   @default("pending") // pending | applied | rejected | failed
+  appliedAt   DateTime? @map("applied_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  rule PricingRule @relation(fields: [ruleId], references: [id])
+
+  @@map("pricing_actions")
+}
+
+// ─── AI Review Analysis ─────────────────────────
+
+model ReviewAnalysis {
+  id                  String   @id @default(uuid())
+  competitorProductId String   @map("competitor_product_id")
+  tenantId            String   @map("tenant_id")
+  totalReviews        Int      @map("total_reviews")
+  avgRating           Decimal  @map("avg_rating") @db.Decimal(3, 2)
+  sentimentPositive   Decimal  @map("sentiment_positive") @db.Decimal(5, 2) // yüzde
+  sentimentNegative   Decimal  @map("sentiment_negative") @db.Decimal(5, 2)
+  sentimentNeutral    Decimal  @map("sentiment_neutral") @db.Decimal(5, 2)
+  summary             String   @db.Text
+  actionRecommendation String? @map("action_recommendation") @db.Text // ZMK farkı
+  aiProvider          String   @map("ai_provider")
+  aiModel             String   @map("ai_model")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  competitorProduct CompetitorProduct @relation(fields: [competitorProductId], references: [id])
+  tenant            Tenant            @relation(fields: [tenantId], references: [id])
+  insights          ReviewInsight[]
+
+  @@map("review_analyses")
+}
+
+model ReviewInsight {
+  id               String  @id @default(uuid())
+  analysisId       String  @map("analysis_id")
+  category         String  // packaging | quality | shipping | price_value | customer_service
+  sentiment        String  // positive | negative | mixed
+  mentionCount     Int     @map("mention_count")
+  percentage       Decimal @db.Decimal(5, 2)
+  sampleQuotes     Json    @map("sample_quotes") @db.JsonB // örnek yorumlar
+  recommendation   String? @db.Text
+
+  analysis ReviewAnalysis @relation(fields: [analysisId], references: [id])
+
+  @@map("review_insights")
+}
+
+// ─── Ad Management (Reklam Yönetimi) ────────────
+
+model AdCampaign {
+  id              String   @id @default(uuid())
+  tenantId        String   @map("tenant_id")
+  trendyolCampaignId String? @map("trendyol_campaign_id")
+  name            String
+  status          String   @default("active") // active | paused | ended
+  budgetDaily     Decimal? @map("budget_daily") @db.Decimal(12, 2)
+  budgetTotal     Decimal? @map("budget_total") @db.Decimal(12, 2)
+  startDate       DateTime? @map("start_date")
+  endDate         DateTime? @map("end_date")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  tenant         Tenant                 @relation(fields: [tenantId], references: [id])
+  keywords       AdKeywordPerformance[]
+  dailyMetrics   AdDailyMetric[]
+
+  @@map("ad_campaigns")
+}
+
+model AdKeywordPerformance {
+  id           String   @id @default(uuid())
+  campaignId   String   @map("campaign_id")
+  keyword      String
+  matchType    String   @default("broad") @map("match_type") // broad | phrase | exact
+  impressions  Int      @default(0)
+  clicks       Int      @default(0)
+  spend        Decimal  @default(0) @db.Decimal(12, 2)
+  sales        Decimal  @default(0) @db.Decimal(12, 2)
+  orders       Int      @default(0)
+  acos         Decimal? @db.Decimal(5, 2) // spend/sales × 100
+  searchRank   Int?     @map("search_rank") // organik sıralama
+  adRank       Int?     @map("ad_rank") // reklam sıralaması
+  date         DateTime @db.Date
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  campaign AdCampaign @relation(fields: [campaignId], references: [id])
+
+  @@map("ad_keyword_performances")
+}
+
+model AdDailyMetric {
+  id           String   @id @default(uuid())
+  campaignId   String   @map("campaign_id")
+  date         DateTime @db.Date
+  impressions  Int      @default(0)
+  clicks       Int      @default(0)
+  spend        Decimal  @default(0) @db.Decimal(12, 2)
+  sales        Decimal  @default(0) @db.Decimal(12, 2)
+  orders       Int      @default(0)
+  acos         Decimal? @db.Decimal(5, 2)
+  roas         Decimal? @db.Decimal(8, 2) // sales/spend
+  ctr          Decimal? @db.Decimal(5, 2) // clicks/impressions × 100
+  cpc          Decimal? @db.Decimal(8, 2) // spend/clicks
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  campaign AdCampaign @relation(fields: [campaignId], references: [id])
+
+  @@unique([campaignId, date])
+  @@map("ad_daily_metrics")
+}
+
+// ─── Scraping Engine ────────────────────────────
+
+model ScrapeTarget {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  url         String
+  type        String   // product_page | search_results | best_sellers | seller_page
+  label       String?
+  intervalMinutes Int  @default(360) @map("interval_minutes") // default 6 saat
+  isActive    Boolean  @default(true) @map("is_active")
+  lastScrapedAt DateTime? @map("last_scraped_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant  Tenant         @relation(fields: [tenantId], references: [id])
+  results ScrapeResult[]
+
+  @@map("scrape_targets")
+}
+
+model ScrapeResult {
+  id          String   @id @default(uuid())
+  targetId    String   @map("target_id")
+  time        DateTime @default(now())
+  status      String   @default("success") // success | failed | blocked
+  data        Json     @db.JsonB
+  errorMessage String? @map("error_message") @db.Text
+  durationMs  Int?     @map("duration_ms")
+  proxyUsed   String?  @map("proxy_used")
+
+  target ScrapeTarget @relation(fields: [targetId], references: [id])
+
+  @@map("scrape_results")
+}
+
+model MarketSnapshot {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  categoryId  Int?     @map("category_id")
+  type        String   // best_sellers | trending | price_distribution
+  time        DateTime @default(now())
+  data        Json     @db.JsonB // ürün listesi, fiyat aralıkları vb.
+  source      String   @default("scrape") // scrape | estimate
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("market_snapshots")
+}
+
+// ─── Notifications & WebSocket ──────────────────
+
+model Notification {
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  type        String    // buybox_lost | stock_drop | price_change | restock_alert | ab_test_complete
+  channel     String    @default("websocket") // websocket | telegram | email
+  title       String
+  message     String    @db.Text
+  severity    String    @default("info") // info | warning | critical
+  data        Json?     @db.JsonB
+  isRead      Boolean   @default(false) @map("is_read")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("notifications")
+}
+
+// ─── Telegram Bot ───────────────────────────────
+
+model TelegramChat {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  chatId      String   @unique @map("chat_id")
+  username    String?
+  isActive    Boolean  @default(true) @map("is_active")
+  alertTypes  Json     @default("[]") @map("alert_types") @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("telegram_chats")
+}
+
+// ─── A/B Testing ────────────────────────────────
+
+model AbTest {
+  id           String    @id @default(uuid())
+  tenantId     String    @map("tenant_id")
+  productId    String    @map("product_id")
+  field        String    // title | description | images | price
+  status       String    @default("running") // running | completed | cancelled
+  variants     Json      @db.JsonB // [{id, content, impressions, clicks, conversions, revenue}]
+  winnerId     String?   @map("winner_id")
+  durationHours Int      @default(48) @map("duration_hours")
+  startedAt    DateTime  @default(now()) @map("started_at")
+  endedAt      DateTime? @map("ended_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("ab_tests")
+}
+
+// ─── Product Research ───────────────────────────
+
+model ProductResearch {
+  id              String   @id @default(uuid())
+  tenantId        String   @map("tenant_id")
+  categoryId      Int?     @map("category_id")
+  categoryName    String?  @map("category_name")
+  keyword         String?
+  demandScore     Decimal  @map("demand_score") @db.Decimal(5, 2) // 0-100
+  competitionScore Decimal @map("competition_score") @db.Decimal(5, 2)
+  opportunityScore Decimal @map("opportunity_score") @db.Decimal(5, 2)
+  avgPrice        Decimal? @map("avg_price") @db.Decimal(12, 2)
+  totalReviews    Int?     @map("total_reviews")
+  totalSellers    Int?     @map("total_sellers")
+  topProducts     Json?    @map("top_products") @db.JsonB
+  recommendation  String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("product_research")
+}
+
+// ─── Competitive War Room ───────────────────────
+
+model WarRoomEntry {
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  competitorId  String?  @map("competitor_id")
+  eventType     String   @map("event_type") // price_change | new_product | stock_out | review_surge | ranking_change
+  title         String
+  description   String   @db.Text
+  impact        String   @default("medium") // low | medium | high | critical
+  data          Json?    @db.JsonB
+  actionTaken   String?  @map("action_taken") @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("war_room_entries")
+}
+
+// ─── Chat Assistant ─────────────────────────────
+
+model ChatSession {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  userId    String   @map("user_id")
+  title     String?
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id])
+  messages ChatMessage[]
+
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id         String   @id @default(uuid())
+  sessionId  String   @map("session_id")
+  role       String   // user | assistant | system
+  content    String   @db.Text
+  data       Json?    @db.JsonB // charts, tables, actions
+  tokensUsed Int?     @map("tokens_used")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  session ChatSession @relation(fields: [sessionId], references: [id])
+
+  @@map("chat_messages")
+}
+
+// ─── Multi-Marketplace ──────────────────────────
+
+model MarketplaceConnection {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  marketplace  String   // trendyol | hepsiburada | n11 | amazon_tr
+  sellerId     String   @map("seller_id")
+  credentials  Json     @db.JsonB // encrypted API credentials
+  status       String   @default("active")
+  lastSyncAt   DateTime? @map("last_sync_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, marketplace])
+  @@map("marketplace_connections")
+}
+
+// ─── White-Label SaaS / Subscription ────────────
+
+model Subscription {
+  id           String    @id @default(uuid())
+  tenantId     String    @map("tenant_id")
+  plan         String    @default("starter") // starter | pro | enterprise
+  status       String    @default("active") // active | cancelled | past_due | trial
+  monthlyPrice Decimal   @map("monthly_price") @db.Decimal(10, 2)
+  currency     String    @default("TRY")
+  trialEndsAt  DateTime? @map("trial_ends_at")
+  currentPeriodStart DateTime @map("current_period_start")
+  currentPeriodEnd   DateTime @map("current_period_end")
+  cancelledAt  DateTime? @map("cancelled_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  tenant  Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("subscriptions")
+}
+
+// ─── Data Collection / Web Scraping (Eklenti) ──
+
+model ExtensionJob {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  type      String   @map("type") // e.g. "STOCK_PROBE", "PRICE_PROBE"
+  payload   Json     @db.JsonB
+  status    String   @default("pending") // pending | in_progress | completed | failed
+  result    Json?    @db.JsonB
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("extension_jobs")
+}
+
+// ─── Rule Engine (Kural Motoru) ────────────────
+
+model AutomationRule {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  
+  // "IF" part
+  triggerType String   @map("trigger_type") // e.g., "ACOS_ABOVE_THRESHOLD", "COMPETITOR_PRICE_DROP", "PROFIT_MARGIN_LOW"
+  conditions  Json     @db.JsonB // e.g., { "operator": "gt", "threshold": 20 }
+  
+  // "THEN" part
+  actionType  String   @map("action_type") // e.g., "DECREASE_AD_BUDGET", "MATCH_PRICE", "PAUSE_ADS"
+  actionData  Json     @db.JsonB // e.g., { "decreasePercent": 10 }
+  
+  lastTriggeredAt DateTime? @map("last_triggered_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("automation_rules")
+}
+
+// ─── Financial / Settlement (Cari Hesap) ────────
+
+model FinancialTransaction {
+  id              String   @id @default(uuid())
+  tenantId        String   @map("tenant_id")
+  transactionDate DateTime @map("transaction_date")
+  type            String   // payment | commission | shipping_fee | return_deduction | ad_charge | coupon_discount | service_fee
+  description     String?  @db.Text
+  amount          Decimal  @db.Decimal(14, 2) // pozitif = gelir, negatif = gider
+  currency        String   @default("TRY")
+  orderId         String?  @map("order_id")
+  trendyolRef     String?  @map("trendyol_ref") // Trendyol'un referans numarası
+  settlementId    String?  @map("settlement_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  tenant     Tenant            @relation(fields: [tenantId], references: [id])
+  settlement SettlementPeriod? @relation(fields: [settlementId], references: [id])
+
+  @@map("financial_transactions")
+}
+
+model SettlementPeriod {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  periodStart  DateTime @map("period_start")
+  periodEnd    DateTime @map("period_end")
+  totalSales   Decimal  @default(0) @map("total_sales") @db.Decimal(14, 2)
+  totalCommission Decimal @default(0) @map("total_commission") @db.Decimal(14, 2)
+  totalShipping Decimal @default(0) @map("total_shipping") @db.Decimal(14, 2)
+  totalReturns Decimal  @default(0) @map("total_returns") @db.Decimal(14, 2)
+  totalAdSpend Decimal  @default(0) @map("total_ad_spend") @db.Decimal(14, 2)
+  totalServiceFees Decimal @default(0) @map("total_service_fees") @db.Decimal(14, 2)
+  netAmount    Decimal  @default(0) @map("net_amount") @db.Decimal(14, 2)
+  paymentStatus String  @default("pending") @map("payment_status") // pending | processing | paid
+  paymentDate  DateTime? @map("payment_date")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  tenant       Tenant                @relation(fields: [tenantId], references: [id])
+  transactions FinancialTransaction[]
+
+  @@unique([tenantId, periodStart, periodEnd])
+  @@map("settlement_periods")
+}
+
+// ─── Keyword Tracking & Rank Tracker ────────────
+
+model KeywordTracking {
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  keyword       String
+  categoryId    Int?     @map("category_id")
+  productId     String?  @map("product_id") // hangi ürünümüz için takip ediliyor
+  isActive      Boolean  @default(true) @map("is_active")
+  checkInterval Int      @default(1440) @map("check_interval") // dakika cinsinden, default 24 saat
+  lastCheckedAt DateTime? @map("last_checked_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant              @relation(fields: [tenantId], references: [id])
+  history KeywordRankHistory[]
+
+  @@unique([tenantId, keyword])
+  @@map("keyword_trackings")
+}
+
+model KeywordRankHistory {
+  id              String   @id @default(uuid())
+  keywordId       String   @map("keyword_id")
+  time            DateTime @default(now())
+  organicRank     Int?     @map("organic_rank")    // organik sıralama
+  adRank          Int?     @map("ad_rank")         // reklam sıralaması
+  totalResults    Int?     @map("total_results")   // toplam sonuç sayısı
+  pageNumber      Int?     @map("page_number")     // kaçıncı sayfa
+  topCompetitors  Json?    @map("top_competitors") @db.JsonB // ilk 10 sonuç
+  searchUrl       String?  @map("search_url")
+
+  keyword KeywordTracking @relation(fields: [keywordId], references: [id])
+
+  @@map("keyword_rank_history")
+}
+
+model SearchVolumeEstimate {
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  keyword       String
+  categoryId    Int?     @map("category_id")
+  estimatedVolume Int?   @map("estimated_volume")  // tahmini aylık arama hacmi
+  competition   String   @default("medium") // low | medium | high
+  difficultyScore Decimal? @map("difficulty_score") @db.Decimal(5, 2) // 0-100
+  opportunityScore Decimal? @map("opportunity_score") @db.Decimal(5, 2) // 0-100
+  avgPrice      Decimal? @map("avg_price") @db.Decimal(12, 2)
+  topProducts   Json?    @map("top_products") @db.JsonB // en üst sıradaki ürünler
+  relatedKeywords Json?  @map("related_keywords") @db.JsonB
+  source        String   @default("scrape") // scrape | estimate | api
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, keyword])
+  @@map("search_volume_estimates")
+}
