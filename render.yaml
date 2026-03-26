@@ -6,8 +6,8 @@ services:
     region: frankfurt
     plan: free
     rootDir: .
-    buildCommand: npm install && cd apps/api && npx prisma generate && npx nest build
-    startCommand: cd apps/api && npx prisma db push --accept-data-loss && cd ../.. && node apps/api/dist/main.js
+    buildCommand: npm install && cd apps/api && ../../node_modules/.bin/prisma generate && ../../node_modules/.bin/nest build
+    startCommand: cd apps/api && ../../node_modules/.bin/prisma db push --accept-data-loss && node dist/main.js
     envVars:
       - key: NODE_ENV
         value: production
