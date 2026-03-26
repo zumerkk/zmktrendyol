@@ -147,7 +147,7 @@ export class IntelligenceController {
   @Post("chat/session")
   @ApiOperation({ summary: "Start new chat session" })
   async createChatSession(@Req() req: any) {
-    return this.chatAssistant.createSession(req.user.tenantId, req.user.userId);
+    return this.chatAssistant.createSession(req.user.tenantId, req.user.id);
   }
 
   @Post("chat/:sessionId/message")
@@ -163,7 +163,7 @@ export class IntelligenceController {
   @Get("chat/sessions")
   @ApiOperation({ summary: "Get chat sessions" })
   async getChatSessions(@Req() req: any) {
-    return this.chatAssistant.getSessions(req.user.tenantId, req.user.userId);
+    return this.chatAssistant.getSessions(req.user.tenantId, req.user.id);
   }
 
   @Get("chat/:sessionId/messages")
