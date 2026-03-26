@@ -1,5 +1,5 @@
-import { Module } from "@nestjs/common";
-import { APP_GUARD } from "@nestjs/core";
+import { Module, MiddlewareConsumer, NestModule } from "@nestjs/common";
+import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from "@nestjs/core";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { ScheduleModule } from "@nestjs/schedule";
 import { PrismaModule } from "./common/prisma/prisma.module";
@@ -23,6 +23,13 @@ import { GodModeModule } from "./god-mode/god-mode.module";
 import { KeywordResearchModule } from "./keyword-research/keyword-research.module";
 import { MarketplaceModule } from "./marketplace/marketplace.module";
 import { FinanceModule } from "./finance/finance.module";
+
+// ─── Production Extras ────────────────────────
+import { HealthController } from "./common/health.controller";
+import { SystemController } from "./common/system.controller";
+import { GlobalExceptionFilter } from "./common/filters/http-exception.filter";
+import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
+import { LoggerMiddleware } from "./common/middleware/logger.middleware";
 
 @Module({
   imports: [
@@ -53,11 +60,25 @@ import { FinanceModule } from "./finance/finance.module";
     MarketplaceModule,
     FinanceModule,
   ],
+  controllers: [HealthController, SystemController],
   providers: [
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    {
+      provide: APP_FILTER,
+      useClass: GlobalExceptionFilter,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ResponseInterceptor,
+    },
   ],
 })
-export class AppModule { }
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes("*");
+  }
+}
+
