@@ -15,7 +15,7 @@ export default function ProductsPage() {
     enabled: isAuthenticated(),
   });
 
-  const products: any[] = Array.isArray(data) ? data : data?.products || data?.items || [];
+  const products: any[] = Array.isArray(data) ? data : data?.data || data?.products || data?.items || [];
 
   const stockStatus = (qty: number) => {
     if (qty === 0) return { label: "Tükendi", class: "error" };

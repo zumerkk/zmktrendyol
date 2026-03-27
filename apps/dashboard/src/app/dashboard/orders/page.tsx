@@ -15,7 +15,7 @@ export default function OrdersPage() {
     enabled: isAuthenticated(),
   });
 
-  const orders: any[] = Array.isArray(data) ? data : data?.orders || data?.items || [];
+  const orders: any[] = Array.isArray(data) ? data : data?.data || data?.orders || data?.items || [];
 
   const statusMap: Record<string, { class: string; emoji: string }> = {
     Created: { class: "pending", emoji: "🟡" },

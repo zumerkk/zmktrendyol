@@ -46,16 +46,20 @@ export default function DashboardPage() {
   const fmtMoney = (n: number) =>
     `₺${(n || 0).toLocaleString("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
+  // Handle nested API format: last30Days.revenue.value or flat format
+  const l30 = kpiData?.last30Days || {};
+  const getVal = (field: any) => (typeof field === 'object' && field !== null) ? (field.value || 0) : (field || 0);
+
   const kpis = kpiData
     ? [
         {
           label: "Aylık Ciro",
-          value: fmtMoney(kpiData.totalRevenue || 0),
+          value: fmtMoney(getVal(l30.revenue) || kpiData.totalRevenue || 0),
           source: "api",
         },
         {
           label: "Toplam Sipariş",
-          value: fmt(kpiData.totalOrders || 0),
+          value: fmt(getVal(l30.orders) || kpiData.totalOrders || 0),
           source: "api",
         },
         {
@@ -65,7 +69,7 @@ export default function DashboardPage() {
         },
         {
           label: "Ort. Sipariş Tutarı",
-          value: fmtMoney(kpiData.avgOrderValue || 0),
+          value: fmtMoney(getVal(l30.avgBasket) || kpiData.avgOrderValue || 0),
           source: "zmk-engine",
         },
       ]
