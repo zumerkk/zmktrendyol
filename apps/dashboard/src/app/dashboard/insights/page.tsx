@@ -65,7 +65,11 @@ export default function InsightsPage() {
           </div>
           <div className="kpi-card">
             <div className="kpi-label">Seviye</div>
-            <div className="kpi-value">{gameData.level || 1}</div>
+            <div className="kpi-value">
+              {typeof gameData.level === "object" && gameData.level
+                ? `${gameData.level.icon || ""} ${gameData.level.name || "Bronze"}`
+                : gameData.level || 1}
+            </div>
             <div className="kpi-source">Kaynak: <span className="source-badge zmk-engine">ZMK</span></div>
           </div>
           <div className="kpi-card">
