@@ -48,32 +48,67 @@ export class ProductsService {
           // Skip if conversion fails
         }
 
-        await this.prisma.product.upsert({
-          where: { id: productId },
-          create: {
-            id: productId,
-            tenantId,
-            trendyolId,
-            barcode: p.barcode,
-            title: p.title,
-            brand: p.brand,
-            categoryId: p.pimCategoryId,
-            categoryName: p.categoryName,
-            imageUrl: p.images?.[0]?.url,
-            approved: p.approved || false,
-            onSale: p.onSale || false,
-          },
-          update: {
-            title: p.title,
-            brand: p.brand,
-            categoryId: p.pimCategoryId,
-            categoryName: p.categoryName,
-            imageUrl: p.images?.[0]?.url,
-            approved: p.approved || false,
-            onSale: p.onSale || false,
-            updatedAt: new Date(),
-          },
+        // Multi-tenant safe: check if product exists FOR THIS TENANT
+        const existing = await this.prisma.product.findFirst({
+          where: { id: productId, tenantId },
         });
+
+        if (existing) {
+          // Update existing product for this tenant
+          await this.prisma.product.update({
+            where: { id: productId },
+            data: {
+              title: p.title,
+              brand: p.brand,
+              trendyolId,
+              categoryId: p.pimCategoryId,
+              categoryName: p.categoryName,
+              imageUrl: p.images?.[0]?.url,
+              approved: p.approved || false,
+              onSale: p.onSale || false,
+              updatedAt: new Date(),
+            },
+          });
+        } else {
+          // Check if same ID exists for a different tenant (cross-tenant collision)
+          const crossTenant = await this.prisma.product.findUnique({
+            where: { id: productId },
+          });
+
+          const finalId = crossTenant
+            ? `${productId}-${tenantId.substring(0, 8)}`
+            : productId;
+
+          await this.prisma.product.upsert({
+            where: { id: finalId },
+            create: {
+              id: finalId,
+              tenantId,
+              trendyolId,
+              barcode: p.barcode,
+              title: p.title,
+              brand: p.brand,
+              categoryId: p.pimCategoryId,
+              categoryName: p.categoryName,
+              imageUrl: p.images?.[0]?.url,
+              approved: p.approved || false,
+              onSale: p.onSale || false,
+            },
+            update: {
+              tenantId,
+              title: p.title,
+              brand: p.brand,
+              trendyolId,
+              categoryId: p.pimCategoryId,
+              categoryName: p.categoryName,
+              imageUrl: p.images?.[0]?.url,
+              approved: p.approved || false,
+              onSale: p.onSale || false,
+              updatedAt: new Date(),
+            },
+          });
+        }
+
         totalSynced++;
       }
 

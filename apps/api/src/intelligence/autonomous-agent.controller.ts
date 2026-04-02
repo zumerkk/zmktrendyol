@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Body, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query, UseGuards, Req } from "@nestjs/common";
+import { ApiTags, ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { AutonomousAgentService } from "./autonomous-agent.service";
 
 /**
@@ -10,7 +12,10 @@ import { AutonomousAgentService } from "./autonomous-agent.service";
  * POST /api/agent/run        — Manuel tetikleme
  * POST /api/agent/toggle     — Ajanı aç/kapat
  */
-@Controller("api/agent")
+@ApiTags("Agent")
+@Controller("agent")
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class AutonomousAgentController {
   constructor(private agent: AutonomousAgentService) {}
 

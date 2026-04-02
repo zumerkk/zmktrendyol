@@ -6,8 +6,8 @@ services:
     region: frankfurt
     plan: free
     rootDir: .
-    buildCommand: npm install && cd apps/api && ../../node_modules/.bin/prisma generate && ../../node_modules/.bin/nest build
-    startCommand: cd apps/api && ../../node_modules/.bin/prisma db push --accept-data-loss && node dist/main.js
+    buildCommand: npm install && cd apps/api && ../../node_modules/.bin/prisma generate && ../../node_modules/.bin/prisma db push --accept-data-loss && ../../node_modules/.bin/nest build
+    startCommand: cd apps/api && node dist/main.js
     envVars:
       - key: NODE_ENV
         value: production
@@ -24,7 +24,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: ENCRYPTION_KEY
-        value: "zmkTr3ndY0lPl4tf0rm2026S3cur3K3y"
+        sync: false
       - key: TRENDYOL_API_BASE_URL
         value: "https://apigw.trendyol.com"
       - key: TRENDYOL_SELLER_ID
@@ -33,6 +33,8 @@ services:
         sync: false
       - key: TRENDYOL_API_SECRET
         sync: false
+      - key: DASHBOARD_URL
+        value: "https://zmk-dashboard.onrender.com"
       - key: OPENAI_API_KEY
         sync: false
       - key: ANTHROPIC_API_KEY
@@ -58,6 +60,8 @@ services:
         value: production
       - key: PORT
         value: "3000"
+      - key: API_URL
+        value: "https://zmk-api.onrender.com"
 
 databases:
   - name: zmk-postgres

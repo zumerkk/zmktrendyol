@@ -6,13 +6,20 @@ const AUTH_TAG_LENGTH = 16;
 
 function getKey(): Buffer {
   const key = process.env.ENCRYPTION_KEY;
-  if (!key || key.length !== 32) {
-    throw new Error(
-      'ENCRYPTION_KEY must be exactly 32 characters (256-bit). Current length: ' +
-        (key?.length || 0),
-    );
+  if (!key) {
+    throw new Error('ENCRYPTION_KEY is not set in environment variables.');
   }
-  return Buffer.from(key, 'utf-8');
+  // Support 64-char hex (32 bytes) or 32-char UTF-8 (32 bytes)
+  if (key.length === 64 && /^[0-9a-fA-F]+$/.test(key)) {
+    return Buffer.from(key, 'hex');
+  }
+  if (key.length === 32) {
+    return Buffer.from(key, 'utf-8');
+  }
+  throw new Error(
+    'ENCRYPTION_KEY must be 32 UTF-8 chars or 64 hex chars (256-bit). Current length: ' +
+      key.length,
+  );
 }
 
 /**

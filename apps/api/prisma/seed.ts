@@ -1,3 +1,6 @@
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+dotenv.config({ path: path.join(__dirname, '../.env') });
 import * as bcrypt from 'bcrypt';
 import pg from 'pg';
 import { encrypt } from '../src/common/crypto.util';
