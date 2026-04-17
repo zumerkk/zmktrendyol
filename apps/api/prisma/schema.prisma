@@ -55,6 +55,11 @@ model Tenant {
   settlementPeriods     SettlementPeriod[]
   keywordTrackings      KeywordTracking[]
   searchVolumeEstimates SearchVolumeEstimate[]
+  rivalWatchTargets     RivalWatchTarget[]
+  rivalScans            RivalScan[]
+  rivalChangeEvents     RivalChangeEvent[]
+  rivalAlerts           RivalAlert[]
+  rivalDecisions        RivalDecision[]
 
   @@map("tenants")
 }
@@ -961,7 +966,7 @@ model AutomationRule {
   
   // "THEN" part
   actionType  String   @map("action_type") // e.g., "DECREASE_AD_BUDGET", "MATCH_PRICE", "PAUSE_ADS"
-  actionData  Json     @db.JsonB // e.g., { "decreasePercent": 10 }
+  actionData  Json     @default("{}") @map("action_data") @db.JsonB // e.g., { "decreasePercent": 10 }
   
   lastTriggeredAt DateTime? @map("last_triggered_at")
   createdAt       DateTime  @default(now()) @map("created_at")
@@ -1072,4 +1077,146 @@ model SearchVolumeEstimate {
 
   @@unique([tenantId, keyword])
   @@map("search_volume_estimates")
+}
+
+// ─── Rival Intelligence (v1.1) ────────────────────────────────────────────────
+
+enum RivalScanStatus {
+  success
+  blocked
+  failed
+}
+
+enum RivalStockSignal {
+  out_of_stock
+  low
+  medium
+  high
+  unknown
+}
+
+enum RivalAlertSeverity {
+  info
+  warning
+  critical
+}
+
+enum RivalDecisionType {
+  AL
+  IZLE
+  BEKLE
+  ALMA
+}
+
+model RivalWatchTarget {
+  id                  String    @id @default(uuid())
+  tenantId            String    @map("tenant_id")
+  url                 String
+  brand               String?
+  title               String?
+  merchantId          String?   @map("merchant_id")
+  boutiqueId          String?   @map("boutique_id")
+  ourProductId        String?   @map("our_product_id")
+  targetMinPrice      Decimal?  @map("target_min_price") @db.Decimal(12, 2)
+  scanIntervalMinutes Int       @default(15) @map("scan_interval_minutes")
+  isActive            Boolean   @default(true) @map("is_active")
+  lastScanAt          DateTime? @map("last_scan_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  tenant    Tenant             @relation(fields: [tenantId], references: [id])
+  scans     RivalScan[]
+  alerts    RivalAlert[]
+  events    RivalChangeEvent[]
+  decisions RivalDecision[]
+
+  @@unique([tenantId, url])
+  @@map("rival_watch_targets")
+}
+
+model RivalScan {
+  id           String          @id @default(uuid())
+  tenantId     String          @map("tenant_id")
+  targetId     String          @map("target_id")
+  status       RivalScanStatus @default(success)
+  httpStatus   Int?            @map("http_status")
+  fetchedAt    DateTime        @default(now()) @map("fetched_at")
+  pageTitle    String?         @map("page_title")
+  currency     String          @default("TRY")
+  lowestPrice  Decimal?        @map("lowest_price") @db.Decimal(12, 2)
+  highestPrice Decimal?        @map("highest_price") @db.Decimal(12, 2)
+  rawSignals   Json?           @map("raw_signals") @db.JsonB
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id])
+  target   RivalWatchTarget @relation(fields: [targetId], references: [id])
+  variants RivalVariantScan[]
+
+  @@index([tenantId, targetId, fetchedAt])
+  @@map("rival_scans")
+}
+
+model RivalVariantScan {
+  id               String           @id @default(uuid())
+  scanId           String           @map("scan_id")
+  variantKey       String           @map("variant_key")
+  listPrice        Decimal?         @map("list_price") @db.Decimal(12, 2)
+  salePrice        Decimal?         @map("sale_price") @db.Decimal(12, 2)
+  stockSignal      RivalStockSignal @default(unknown) @map("stock_signal")
+  stockConfidence  Float            @default(0.3) @map("stock_confidence")
+  availabilityText String?          @map("availability_text")
+
+  scan RivalScan @relation(fields: [scanId], references: [id])
+
+  @@index([scanId])
+  @@map("rival_variant_scans")
+}
+
+model RivalChangeEvent {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  targetId  String   @map("target_id")
+  type      String
+  payload   Json?    @db.JsonB
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant           @relation(fields: [tenantId], references: [id])
+  target RivalWatchTarget @relation(fields: [targetId], references: [id])
+
+  @@index([tenantId, targetId, createdAt])
+  @@map("rival_change_events")
+}
+
+model RivalAlert {
+  id        String             @id @default(uuid())
+  tenantId  String             @map("tenant_id")
+  targetId  String             @map("target_id")
+  severity  RivalAlertSeverity @default(info)
+  type      String
+  message   String
+  payload   Json?              @db.JsonB
+  isActive  Boolean            @default(true) @map("is_active")
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+
+  tenant Tenant           @relation(fields: [tenantId], references: [id])
+  target RivalWatchTarget @relation(fields: [targetId], references: [id])
+
+  @@index([tenantId, targetId, isActive])
+  @@map("rival_alerts")
+}
+
+model RivalDecision {
+  id        String            @id @default(uuid())
+  tenantId  String            @map("tenant_id")
+  targetId  String            @map("target_id")
+  decision  RivalDecisionType
+  score     Int               @default(0)
+  reasons   Json              @db.JsonB
+  createdAt DateTime          @default(now()) @map("created_at")
+
+  tenant Tenant           @relation(fields: [tenantId], references: [id])
+  target RivalWatchTarget @relation(fields: [targetId], references: [id])
+
+  @@index([tenantId, targetId, createdAt])
+  @@map("rival_decisions")
 }

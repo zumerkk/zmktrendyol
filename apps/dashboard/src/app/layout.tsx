@@ -96,6 +96,19 @@ export default function RootLayout({
               </a>
 
               <div className="sidebar-section-title">Zekâ</div>
+              <a href="/dashboard/rivals" className="sidebar-link">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.35-4.35" />
+                  <path d="M11 8v6M8 11h6" />
+                </svg>
+                Rakip İstihbarat
+              </a>
               <a href="/dashboard/competitors" className="sidebar-link">
                 <svg
                   viewBox="0 0 24 24"

@@ -71,7 +71,7 @@ async function main() {
 
   // ─── 5. Create OOS Sniper Automation Rule ─────
   await pool.query(
-    `INSERT INTO automation_rules (id, tenant_id, name, trigger_type, conditions, action_type, "actionData", is_active, created_at, updated_at)
+    `INSERT INTO automation_rules (id, tenant_id, name, trigger_type, conditions, action_type, action_data, is_active, created_at, updated_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, true, NOW(), NOW())
      ON CONFLICT (id) DO NOTHING`,
     [
@@ -85,6 +85,24 @@ async function main() {
     ],
   );
   console.log('✅ Automation Rule: OOS Sniper');
+
+  // ─── 6. Rival Watch Targets ───────────────────
+  const rivals = [
+    'https://www.trendyol.com/adidas/vl-court-base-id3711-beyaz-gunluk-sneaker-p-815376805',
+    'https://www.trendyol.com/adidas/runfalcon-5-w-kadin-kosu-ayakkabisi-ih7759-p-828498459?boutiqueId=683429&merchantId=968',
+    'https://www.trendyol.com/adidas/vl-court-3-0-unisex-spor-ayakkabi-id9184-p-887265545?boutiqueId=61&merchantId=416518',
+    'https://www.trendyol.com/adidas/tensaur-sport-2-0-beyaz-siyah-unisex-sneaker-gw6422-p-343284968?boutiqueId=690236&merchantId=968',
+  ];
+
+  for (const url of rivals) {
+    await pool.query(
+      `INSERT INTO rival_watch_targets (id, tenant_id, url, scan_interval_minutes, is_active, created_at, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, 15, true, NOW(), NOW())
+       ON CONFLICT (tenant_id, url) DO NOTHING`,
+      [tenantId, url],
+    );
+  }
+  console.log(`✅ Rival targets: ${rivals.length} url`);
 
   // ─── Summary ──────────────────────────────────
   console.log('\n🎉 Seed tamamlandı!');

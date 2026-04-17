@@ -23,6 +23,7 @@ import { GodModeModule } from "./god-mode/god-mode.module";
 import { KeywordResearchModule } from "./keyword-research/keyword-research.module";
 import { MarketplaceModule } from "./marketplace/marketplace.module";
 import { FinanceModule } from "./finance/finance.module";
+import { RivalsModule } from "./rivals/rivals.module";
 
 // ─── Production Extras ────────────────────────
 import { HealthController } from "./common/health.controller";
@@ -59,6 +60,7 @@ import { LoggerMiddleware } from "./common/middleware/logger.middleware";
     KeywordResearchModule,
     MarketplaceModule,
     FinanceModule,
+    RivalsModule,
   ],
   controllers: [HealthController, SystemController],
   providers: [
