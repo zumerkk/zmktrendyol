@@ -966,7 +966,7 @@ model AutomationRule {
   
   // "THEN" part
   actionType  String   @map("action_type") // e.g., "DECREASE_AD_BUDGET", "MATCH_PRICE", "PAUSE_ADS"
-  actionData  Json     @db.JsonB // e.g., { "decreasePercent": 10 }
+  actionData  Json     @default("{}") @map("action_data") @db.JsonB // e.g., { "decreasePercent": 10 }
   
   lastTriggeredAt DateTime? @map("last_triggered_at")
   createdAt       DateTime  @default(now()) @map("created_at")

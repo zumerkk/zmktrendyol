@@ -71,7 +71,7 @@ async function main() {
 
   // ─── 5. Create OOS Sniper Automation Rule ─────
   await pool.query(
-    `INSERT INTO automation_rules (id, tenant_id, name, trigger_type, conditions, action_type, "actionData", is_active, created_at, updated_at)
+    `INSERT INTO automation_rules (id, tenant_id, name, trigger_type, conditions, action_type, action_data, is_active, created_at, updated_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, true, NOW(), NOW())
      ON CONFLICT (id) DO NOTHING`,
     [
