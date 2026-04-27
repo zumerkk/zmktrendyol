@@ -110,6 +110,57 @@ export class ProductsService {
         }
 
         totalSynced++;
+
+        // ─── Sync Variants (price & stock) ───
+        // Trendyol returns price/stock either in listingItems array or directly on the product
+        const listings = p.listingItems || p.productMainVariants || [];
+        
+        if (listings.length > 0) {
+          // Multi-variant products
+          for (const item of listings) {
+            const variantId = item.barcode || `${productId}-v${item.listingId || 0}`;
+            await this.prisma.productVariant.upsert({
+              where: { id: variantId },
+              create: {
+                id: variantId,
+                productId,
+                sku: item.stockCode || item.sku || null,
+                barcode: item.barcode || null,
+                listPrice: Number(item.listPrice || item.originalPrice || 0),
+                salePrice: Number(item.salePrice || item.price || 0),
+                quantity: Number(item.quantity || item.stock || 0),
+                attributes: item.attributes || null,
+              },
+              update: {
+                listPrice: Number(item.listPrice || item.originalPrice || 0),
+                salePrice: Number(item.salePrice || item.price || 0),
+                quantity: Number(item.quantity || item.stock || 0),
+                updatedAt: new Date(),
+              },
+            });
+          }
+        } else if (p.salePrice || p.listPrice || p.quantity !== undefined) {
+          // Single-variant: price/stock directly on product object (standard Trendyol format)
+          const variantId = `${productId}-default`;
+          await this.prisma.productVariant.upsert({
+            where: { id: variantId },
+            create: {
+              id: variantId,
+              productId,
+              sku: p.stockCode || null,
+              barcode: p.barcode || null,
+              listPrice: Number(p.listPrice || p.salePrice || 0),
+              salePrice: Number(p.salePrice || p.listPrice || 0),
+              quantity: Number(p.quantity ?? 0),
+            },
+            update: {
+              listPrice: Number(p.listPrice || p.salePrice || 0),
+              salePrice: Number(p.salePrice || p.listPrice || 0),
+              quantity: Number(p.quantity ?? 0),
+              updatedAt: new Date(),
+            },
+          });
+        }
       }
 
       this.logger.log(`Synced ${totalSynced} products for tenant ${tenantId}`);

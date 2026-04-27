@@ -26,6 +26,11 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Post("refresh")
+  async refreshToken(@Body() dto: { refreshToken: string }) {
+    return this.authService.refreshToken(dto.refreshToken);
+  }
+
   @Post("connect-store")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

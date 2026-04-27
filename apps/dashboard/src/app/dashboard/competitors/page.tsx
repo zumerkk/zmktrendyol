@@ -1,31 +1,56 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { api, isAuthenticated } from "../../../lib/api";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "../../../lib/api";
+import { useAuth } from "../../../lib/useAuth";
+import { useState } from "react";
 
 export default function CompetitorsPage() {
-  const router = useRouter();
-  useEffect(() => { if (!isAuthenticated()) router.push("/login"); }, [router]);
+  const { ready, authed } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: competitors, isLoading } = useQuery({
     queryKey: ["competitors"],
     queryFn: () => api.get("/competitors"),
-    enabled: isAuthenticated(),
+    enabled: authed,
   });
 
   const { data: buybox } = useQuery({
     queryKey: ["buybox"],
     queryFn: () => api.get("/competitors/buybox/status"),
-    enabled: isAuthenticated(),
+    enabled: authed,
   });
 
   const { data: probes } = useQuery({
     queryKey: ["probes"],
     queryFn: () => api.get("/competitors/probes/active"),
-    enabled: isAuthenticated(),
+    enabled: authed,
   });
+
+  // Add competitor form
+  const [compUrl, setCompUrl] = useState("");
+  const [compTitle, setCompTitle] = useState("");
+  const [compBrand, setCompBrand] = useState("");
+  const [showForm, setShowForm] = useState(false);
+
+  const addMutation = useMutation({
+    mutationFn: () => api.post("/competitors", { url: compUrl, title: compTitle, brand: compBrand }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["competitors"] });
+      setCompUrl(""); setCompTitle(""); setCompBrand(""); setShowForm(false);
+    },
+  });
+
+  const probeMutation = useMutation({
+    mutationFn: (id: string) => api.post(`/competitors/${id}/probe-now`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["probes"] }),
+  });
+
+  const buyboxMutation = useMutation({
+    mutationFn: (id: string) => api.post(`/competitors/${id}/buybox/enable`),
+  });
+
+  if (!ready) return null;
 
   const compList: any[] = Array.isArray(competitors) ? competitors : [];
   const buyboxData: any = buybox || {};
@@ -41,7 +66,7 @@ export default function CompetitorsPage() {
   }
 
   return (
-    <>
+    <div>
       <div className="page-header">
         <h1 className="page-title">⚔️ Rakip İzleme</h1>
         <p className="page-subtitle">Rakip fiyatları ve buybox durumu — Gerçek Veriler</p>
@@ -68,6 +93,53 @@ export default function CompetitorsPage() {
           </div>
         </div>
 
+        {/* Add Competitor Button + Form */}
+        <div style={{ marginBottom: 20 }}>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            style={{
+              padding: "10px 24px", borderRadius: 8, border: "none",
+              background: "linear-gradient(135deg, #6366f1, #818cf8)", color: "#fff",
+              fontWeight: 600, cursor: "pointer", fontSize: 14,
+            }}
+          >
+            {showForm ? "✕ İptal" : "+ Rakip Ekle"}
+          </button>
+        </div>
+
+        {showForm && (
+          <div className="card" style={{ marginBottom: 20, padding: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 12, alignItems: "end" }}>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Trendyol URL *</div>
+                <input value={compUrl} onChange={(e) => setCompUrl(e.target.value)}
+                  placeholder="https://www.trendyol.com/..." style={inputStyle} />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Ürün Adı</div>
+                <input value={compTitle} onChange={(e) => setCompTitle(e.target.value)}
+                  placeholder="Rakip ürün adı" style={inputStyle} />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Marka</div>
+                <input value={compBrand} onChange={(e) => setCompBrand(e.target.value)}
+                  placeholder="Marka" style={inputStyle} />
+              </div>
+              <button
+                onClick={() => addMutation.mutate()}
+                disabled={!compUrl || addMutation.isPending}
+                style={{
+                  padding: "10px 20px", borderRadius: 8, border: "none",
+                  background: !compUrl ? "#374151" : "linear-gradient(135deg, #22c55e, #16a34a)",
+                  color: "#fff", fontWeight: 600, cursor: compUrl ? "pointer" : "not-allowed", height: 42,
+                }}
+              >
+                {addMutation.isPending ? "⏳" : "Ekle"}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="card">
           <div className="card-header">
             <div className="card-title">Rakip Listesi</div>
@@ -75,12 +147,12 @@ export default function CompetitorsPage() {
           </div>
           {compList.length === 0 ? (
             <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
-              Henüz rakip eklenmedi — Rakip ekleyin
+              Henüz rakip eklenmedi — Yukarıdaki &quot;Rakip Ekle&quot; butonunu kullanın
             </div>
           ) : (
             <table className="data-table">
               <thead>
-                <tr><th>Ürün</th><th>Marka</th><th>Fiyat</th><th>Takip</th></tr>
+                <tr><th>Ürün</th><th>Marka</th><th>Fiyat</th><th>Takip</th><th>Aksiyonlar</th></tr>
               </thead>
               <tbody>
                 {compList.map((c: any) => (
@@ -91,7 +163,7 @@ export default function CompetitorsPage() {
                       </div>
                       {c.trendyolUrl && (
                         <a href={c.trendyolUrl} target="_blank" rel="noreferrer"
-                          style={{ fontSize: 10, color: "var(--accent-primary-light)" }}>Trendyol'da Gör</a>
+                          style={{ fontSize: 10, color: "var(--accent-primary-light)" }}>Trendyol&#39;da Gör</a>
                       )}
                     </td>
                     <td>{c.brand || "—"}</td>
@@ -103,6 +175,18 @@ export default function CompetitorsPage() {
                         {c.trackedSince ? new Date(c.trackedSince).toLocaleDateString("tr-TR") : "Aktif"}
                       </span>
                     </td>
+                    <td>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button onClick={() => probeMutation.mutate(c.id)}
+                          style={actionBtnStyle} title="Stok Probe">
+                          🔍
+                        </button>
+                        <button onClick={() => buyboxMutation.mutate(c.id)}
+                          style={actionBtnStyle} title="Buybox İzle">
+                          🏆
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -110,6 +194,17 @@ export default function CompetitorsPage() {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
+
+const inputStyle: React.CSSProperties = {
+  width: "100%", padding: "10px 14px", borderRadius: 8,
+  border: "1px solid var(--border-primary)", background: "var(--bg-secondary)",
+  color: "var(--text-primary)", fontSize: 14, boxSizing: "border-box",
+};
+
+const actionBtnStyle: React.CSSProperties = {
+  padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-primary)",
+  background: "var(--bg-secondary)", cursor: "pointer", fontSize: 14,
+};

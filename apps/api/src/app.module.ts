@@ -24,6 +24,7 @@ import { KeywordResearchModule } from "./keyword-research/keyword-research.modul
 import { MarketplaceModule } from "./marketplace/marketplace.module";
 import { FinanceModule } from "./finance/finance.module";
 import { RivalsModule } from "./rivals/rivals.module";
+import { ShadowModule } from "./shadow/shadow.module";
 
 // ─── Production Extras ────────────────────────
 import { HealthController } from "./common/health.controller";
@@ -36,7 +37,7 @@ import { LoggerMiddleware } from "./common/middleware/logger.middleware";
   imports: [
     ThrottlerModule.forRoot([{
       ttl: 60000,
-      limit: 100,
+      limit: process.env.NODE_ENV === 'production' ? 100 : 1000,
     }]),
     ScheduleModule.forRoot(),
     PrismaModule,
@@ -61,6 +62,7 @@ import { LoggerMiddleware } from "./common/middleware/logger.middleware";
     MarketplaceModule,
     FinanceModule,
     RivalsModule,
+    ShadowModule,
   ],
   controllers: [HealthController, SystemController],
   providers: [
@@ -83,4 +85,3 @@ export class AppModule implements NestModule {
     consumer.apply(LoggerMiddleware).forRoutes("*");
   }
 }
-

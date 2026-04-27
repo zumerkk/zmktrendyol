@@ -16,6 +16,7 @@ import { ValidationPipe, Logger } from "@nestjs/common";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import { IoAdapter } from "@nestjs/platform-socket.io";
 import { AppModule } from "./app.module";
+import { Request, Response, NextFunction } from "express";
 
 import helmet from "helmet";
 
@@ -27,6 +28,20 @@ async function bootstrap() {
 
   // Graceful shutdown
   app.enableShutdownHooks();
+
+  // Basic Auth for Bull Board
+  app.use('/admin/queues', (req: Request, res: Response, next: NextFunction) => {
+    const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+    
+    // In production, you should use env variables for credentials
+    if (login && password && login === 'admin' && password === (process.env.ADMIN_PASSWORD || 'zmk123!')) {
+      return next();
+    }
+
+    res.set('WWW-Authenticate', 'Basic realm="401"');
+    res.status(401).send('Authentication required.');
+  });
 
   // Security Headers
   app.use(helmet());
@@ -58,49 +73,53 @@ async function bootstrap() {
     }),
   );
 
-  // ─── Swagger ──────────────────────────────────
+  // ─── Swagger (disabled in production for security) ─────
   const isProduction = process.env.NODE_ENV === "production";
-  const config = new DocumentBuilder()
-    .setTitle("ZMK Trendyol Platform API")
-    .setDescription(
-      "🚀 **Trendyol Mağaza Zekâ Platformu**\n\n" +
-      "Full-stack e-commerce intelligence platform with:\n" +
-      "- 🛒 Trendyol API Integration (Products, Orders, Finance, Claims)\n" +
-      "- 📊 Analytics & KPI Dashboard\n" +
-      "- 🤖 AI-Powered Listing & Review Analysis\n" +
-      "- 🎯 Competitor Intelligence & Dynamic Pricing\n" +
-      "- 🔑 Keyword Research & SEO Optimization\n" +
-      "- 🏪 Multi-Marketplace Hub (Trendyol, Hepsiburada, N11, Amazon)\n" +
-      "- 📧 E-Fatura & Finance Management\n" +
-      "- ⚡ Automation Rules Engine\n\n" +
-      "**Auth:** Use Bearer token from `/api/auth/login`"
-    )
-    .setVersion("1.0.0")
-    .addBearerAuth()
-    .addServer(isProduction ? "https://zmk-api.onrender.com" : "http://localhost:4000", isProduction ? "Production" : "Local Development")
-    .addTag("System", "Health check, sistem durumu")
-    .addTag("Auth", "Kayıt, giriş, mağaza bağlantısı")
-    .addTag("Trendyol", "Ürün, sipariş, finans, iade senkronizasyonu")
-    .addTag("Analytics", "KPI, P&L, stok yenileme")
-    .addTag("Competitors", "Rakip takip, Buybox, dinamik fiyatlama")
-    .addTag("AI", "Yorum analizi, listing optimizasyonu")
-    .addTag("Intelligence", "A/B Test, ML Prediction, War Room")
-    .addTag("Keywords", "Anahtar kelime araştırma, SEO skoru, sıralama takibi")
-    .addTag("Marketplace", "Çoklu pazar yeri yönetimi")
-    .addTag("Automation", "Otomasyon kuralları motoru")
-    .addTag("Scraper", "Trendyol sayfa tarama motoru")
-    .addTag("Notifications", "WebSocket + Telegram bildirimleri")
-    .addTag("God Mode", "Arbitraj, OOS Sniper, Hijacker Defense")
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup("api/docs", app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-      docExpansion: "none",
-      filter: true,
-      tagsSorter: "alpha",
-    },
-  });
+  if (!isProduction) {
+    const config = new DocumentBuilder()
+      .setTitle("ZMK Trendyol Platform API")
+      .setDescription(
+        "🚀 **Trendyol Mağaza Zekâ Platformu**\n\n" +
+        "Full-stack e-commerce intelligence platform with:\n" +
+        "- 🛒 Trendyol API Integration (Products, Orders, Finance, Claims)\n" +
+        "- 📊 Analytics & KPI Dashboard\n" +
+        "- 🤖 AI-Powered Listing & Review Analysis\n" +
+        "- 🎯 Competitor Intelligence & Dynamic Pricing\n" +
+        "- 🔑 Keyword Research & SEO Optimization\n" +
+        "- 🏪 Multi-Marketplace Hub (Trendyol, Hepsiburada, N11, Amazon)\n" +
+        "- 📧 E-Fatura & Finance Management\n" +
+        "- ⚡ Automation Rules Engine\n\n" +
+        "**Auth:** Use Bearer token from `/api/auth/login`"
+      )
+      .setVersion("1.0.0")
+      .addBearerAuth()
+      .addServer("http://localhost:4000", "Local Development")
+      .addTag("System", "Health check, sistem durumu")
+      .addTag("Auth", "Kayıt, giriş, mağaza bağlantısı")
+      .addTag("Trendyol", "Ürün, sipariş, finans, iade senkronizasyonu")
+      .addTag("Analytics", "KPI, P&L, stok yenileme")
+      .addTag("Competitors", "Rakip takip, Buybox, dinamik fiyatlama")
+      .addTag("AI", "Yorum analizi, listing optimizasyonu")
+      .addTag("Intelligence", "A/B Test, ML Prediction, War Room")
+      .addTag("Keywords", "Anahtar kelime araştırma, SEO skoru, sıralama takibi")
+      .addTag("Marketplace", "Çoklu pazar yeri yönetimi")
+      .addTag("Automation", "Otomasyon kuralları motoru")
+      .addTag("Scraper", "Trendyol sayfa tarama motoru")
+      .addTag("Notifications", "WebSocket + Telegram bildirimleri")
+      .addTag("God Mode", "Arbitraj, OOS Sniper, Hijacker Defense")
+      .addTag("Finance", "E-Fatura, cari hesap, hakediş")
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup("api/docs", app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        docExpansion: "none",
+        filter: true,
+        tagsSorter: "alpha",
+      },
+    });
+    logger.log("📚 Swagger enabled at /api/docs (dev only)");
+  }
 
   // ─── Start Server ─────────────────────────────
   const port = process.env.PORT || process.env.API_PORT || 4000;
@@ -108,7 +127,7 @@ async function bootstrap() {
 
   logger.log("═══════════════════════════════════════════");
   logger.log(`🚀 ZMK API v1.0.0 running on port ${port}`);
-  logger.log(`📚 Swagger: http://localhost:${port}/api/docs`);
+  if (!isProduction) logger.log(`📚 Swagger: http://localhost:${port}/api/docs`);
   logger.log(`❤️  Health:  http://localhost:${port}/api/health`);
   logger.log(`🔌 WebSocket ready`);
   logger.log(`🌍 ENV: ${process.env.NODE_ENV || "development"}`);

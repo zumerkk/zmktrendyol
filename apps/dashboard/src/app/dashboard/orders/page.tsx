@@ -1,19 +1,35 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { api, isAuthenticated } from "../../../lib/api";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "../../../lib/api";
+import { useAuth } from "../../../lib/useAuth";
+import { useState } from "react";
 
 export default function OrdersPage() {
-  const router = useRouter();
-  useEffect(() => { if (!isAuthenticated()) router.push("/login"); }, [router]);
+  const { ready, authed } = useAuth();
+  const queryClient = useQueryClient();
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["orders"],
     queryFn: () => api.get("/trendyol/orders"),
-    enabled: isAuthenticated(),
+    enabled: authed,
   });
+
+  const syncMutation = useMutation({
+    mutationFn: () => api.post("/trendyol/orders/sync"),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      setSyncMsg(`✅ ${res.synced ?? res.total ?? "?"} sipariş senkronize edildi!`);
+      setTimeout(() => setSyncMsg(null), 5000);
+    },
+    onError: (err: any) => {
+      setSyncMsg(`❌ Senkronizasyon hatası: ${err.message}`);
+      setTimeout(() => setSyncMsg(null), 8000);
+    },
+  });
+
+  if (!ready) return null;
 
   const orders: any[] = Array.isArray(data) ? data : data?.data || data?.orders || data?.items || [];
 
@@ -42,13 +58,40 @@ export default function OrdersPage() {
   }
 
   return (
-    <>
-      <div className="page-header">
-        <h1 className="page-title">🛒 Sipariş Yönetimi</h1>
-        <p className="page-subtitle">
-          Trendyol mağazanızdaki tüm siparişler — Gerçek Veriler
-        </p>
+    <div>
+      <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <h1 className="page-title">🛒 Sipariş Yönetimi</h1>
+          <p className="page-subtitle">
+            Trendyol mağazanızdaki tüm siparişler — Gerçek Veriler
+          </p>
+        </div>
+        <button
+          onClick={() => syncMutation.mutate()}
+          disabled={syncMutation.isPending}
+          style={{
+            padding: "10px 24px", borderRadius: 10, border: "none",
+            background: syncMutation.isPending ? "rgba(99,102,241,0.3)" : "linear-gradient(135deg, #6366f1, #818cf8)",
+            color: "#fff", fontWeight: 700, cursor: syncMutation.isPending ? "wait" : "pointer",
+            fontSize: 13, display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap",
+            boxShadow: "0 4px 16px rgba(99,102,241,0.3)", transition: "all 0.2s ease"
+          }}
+        >
+          {syncMutation.isPending ? "⏳ Senkronize ediliyor..." : "🔄 Trendyol'dan Senkronize Et"}
+        </button>
       </div>
+
+      {syncMsg && (
+        <div style={{
+          margin: "0 0 16px", padding: "12px 16px", borderRadius: 10,
+          background: syncMsg.startsWith("✅") ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
+          border: `1px solid ${syncMsg.startsWith("✅") ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`,
+          color: syncMsg.startsWith("✅") ? "#22c55e" : "#ef4444",
+          fontWeight: 600, fontSize: 13
+        }}>
+          {syncMsg}
+        </div>
+      )}
 
       <div className="page-content animate-fade-in">
         <div className="kpi-grid">
@@ -136,6 +179,6 @@ export default function OrdersPage() {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

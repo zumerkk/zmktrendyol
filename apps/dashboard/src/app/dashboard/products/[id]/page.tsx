@@ -1,55 +1,55 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { api, isAuthenticated } from "../../../../lib/api";
-import { useRouter, useParams } from "next/navigation";
-import { useEffect } from "react";
+import { api } from "../../../../lib/api";
+import { useAuth } from "../../../../lib/useAuth";
+import { useParams } from "next/navigation";
 
 export default function ProductDetailPage() {
-  const router = useRouter();
+  const { ready, authed } = useAuth();
   const params = useParams();
   const productId = params?.id as string;
-
-  useEffect(() => { if (!isAuthenticated()) router.push("/login"); }, [router]);
 
   const { data: products } = useQuery({
     queryKey: ["products"],
     queryFn: () => api.get("/trendyol/products?page=0&pageSize=100"),
-    enabled: isAuthenticated(),
+    enabled: authed,
   });
 
   const { data: priceHistory } = useQuery({
     queryKey: ["price-history", productId],
     queryFn: () => api.get(`/trendyol/inventory/price-history/${productId}`),
-    enabled: isAuthenticated() && !!productId,
+    enabled: authed && !!productId,
   });
 
   const { data: priceExtremes } = useQuery({
     queryKey: ["price-extremes", productId],
     queryFn: () => api.get(`/trendyol/inventory/price-extremes/${productId}`),
-    enabled: isAuthenticated() && !!productId,
+    enabled: authed && !!productId,
   });
 
   const { data: stockBreakage } = useQuery({
     queryKey: ["stock-breakage", productId],
     queryFn: () => api.get(`/trendyol/inventory/stock-breakage/${productId}`),
-    enabled: isAuthenticated() && !!productId,
+    enabled: authed && !!productId,
   });
 
   const { data: mlPrediction } = useQuery({
     queryKey: ["ml-prediction", productId],
     queryFn: () => api.get(`/intelligence/prediction/${productId}`),
-    enabled: isAuthenticated() && !!productId,
+    enabled: authed && !!productId,
   });
 
   const { data: optimalPrice } = useQuery({
     queryKey: ["optimal-price", productId],
     queryFn: () => api.get(`/intelligence/optimal-price/${productId}`),
-    enabled: isAuthenticated() && !!productId,
+    enabled: authed && !!productId,
   });
 
+  if (!ready) return null;
+
   // Find the specific product from the list
-  const productList: any[] = Array.isArray(products) ? products : products?.products || products?.items || [];
+  const productList: any[] = Array.isArray(products) ? products : products?.data || products?.products || products?.items || [];
   const product = productList.find((p: any) => p.id === productId) || null;
 
   const history: any[] = Array.isArray(priceHistory) ? priceHistory : priceHistory?.history || [];
@@ -65,7 +65,7 @@ export default function ProductDetailPage() {
   const chartWidth = 400;
 
   return (
-    <>
+    <div>
       <div className="page-header">
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <a href="/dashboard/products" style={{ color: "var(--text-muted)", fontSize: 13 }}>
@@ -105,22 +105,22 @@ export default function ProductDetailPage() {
               <div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Liste Fiyat</div>
                 <div style={{ fontSize: 16, fontWeight: 700, textDecoration: "line-through", color: "var(--text-muted)" }}>
-                  {product?.listPrice ? fmtMoney(product.listPrice) : "—"}
+                  {(product?.listPrice || product?.variants?.[0]?.listPrice) ? fmtMoney(product.listPrice || product.variants?.[0]?.listPrice) : "—"}
                 </div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Satış Fiyat</div>
                 <div style={{ fontSize: 24, fontWeight: 800, color: "var(--accent-success)" }}>
-                  {product?.salePrice ? fmtMoney(product.salePrice) : "—"}
+                  {(product?.salePrice || product?.variants?.[0]?.salePrice) ? fmtMoney(product.salePrice || product.variants?.[0]?.salePrice) : "—"}
                 </div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Stok</div>
                 <div style={{
                   fontSize: 24, fontWeight: 800,
-                  color: (product?.quantity ?? 0) < 20 ? "var(--accent-warning)" : "var(--text-primary)"
+                  color: ((product?.quantity ?? product?.variants?.[0]?.quantity ?? 0)) < 20 ? "var(--accent-warning)" : "var(--text-primary)"
                 }}>
-                  {product?.quantity ?? product?.stock ?? 0} ad.
+                  {product?.quantity ?? product?.variants?.[0]?.quantity ?? product?.stock ?? 0} ad.
                 </div>
               </div>
             </div>
@@ -298,6 +298,6 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

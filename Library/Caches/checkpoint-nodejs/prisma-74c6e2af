@@ -1,0 +1,57 @@
+{
+  "last_reminder": 0,
+  "cached_at": 1776595868544,
+  "version": "5.22.0",
+  "cli_path": "/Users/zumerkekillioglu/Desktop/ZMKTRENDYOL/node_modules/.bin/prisma",
+  "output": {
+    "product": "prisma",
+    "previous_version": "5.22.0",
+    "checkpoint_version": 4,
+    "local_timestamp_without_timezone": "2026-04-19T13:51:07Z",
+    "current_version": "7.7.0",
+    "current_release_date": 1775577373,
+    "client_event_id": "7413ac46-6460-4457-b0ad-6c8fae057b99",
+    "current_download_url": "https://github.com/prisma/prisma",
+    "package": "prisma",
+    "release_tag": "latest",
+    "install_command": "npm install --save-dev prisma",
+    "schema_providers": [
+      "postgresql"
+    ],
+    "schema_preview_features": [
+      "driverAdapters"
+    ],
+    "schema_generators_providers": [
+      "prisma-client-js"
+    ],
+    "current_changelog_url": "https://github.com/prisma/prisma",
+    "outdated": true,
+    "project_website": "https://prisma.io",
+    "alerts": []
+  },
+  "product": "prisma",
+  "cli_install_type": "local",
+  "local_timestamp": "2026-04-18T23:42:01+03:00",
+  "project_hash": "741b04d6",
+  "cli_path_hash": "74c6e2af",
+  "endpoint": "https://checkpoint.prisma.io",
+  "arch": "arm64",
+  "os": "darwin",
+  "node_version": "v24.7.0",
+  "command": "db push --accept-data-loss",
+  "schema_providers": [
+    "postgresql"
+  ],
+  "schema_preview_features": [
+    "driverAdapters"
+  ],
+  "schema_generators_providers": [
+    "prisma-client-js"
+  ],
+  "cache_file": "/Users/zumerkekillioglu/Desktop/ZMKTRENDYOL/Library/Caches/checkpoint-nodejs/prisma-74c6e2af",
+  "cache_duration": 43200000,
+  "remind_duration": 172800000,
+  "timeout": 5000,
+  "unref": true,
+  "child_path": "/Users/zumerkekillioglu/Desktop/ZMKTRENDYOL/node_modules/prisma/build/child"
+}

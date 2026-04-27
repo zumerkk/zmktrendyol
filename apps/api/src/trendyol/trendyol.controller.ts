@@ -234,4 +234,57 @@ export class TrendyolController {
   ) {
     return this.claimsService.getReturnAnalytics(req.user.tenantId, days);
   }
+
+  // ─── Full Sync ──────────────────────────────
+  @Post("full-sync")
+  @ApiOperation({
+    summary: "Tam senkronizasyon — ürünler + siparişler + kategoriler + markalar",
+  })
+  async fullSync(@Req() req: any) {
+    const tenantId = req.user.tenantId;
+    const results: any = { timestamp: new Date().toISOString() };
+
+    // 1. Products
+    try {
+      let page = 0;
+      let totalSynced = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const r = await this.productsService.syncProducts(tenantId, page, 200);
+        totalSynced += r.synced;
+        hasMore = r.synced === 200;
+        page++;
+      }
+      results.products = { synced: totalSynced, status: "success" };
+    } catch (error: any) {
+      results.products = { synced: 0, status: "failed", error: error.message };
+    }
+
+    // 2. Orders (last 7 days)
+    try {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const r = await this.ordersService.syncOrders(tenantId, sevenDaysAgo);
+      results.orders = { synced: r.synced, status: "success" };
+    } catch (error: any) {
+      results.orders = { synced: 0, status: "failed", error: error.message };
+    }
+
+    // 3. Categories
+    try {
+      const r = await this.productsService.syncCategories(tenantId);
+      results.categories = { synced: r.synced, status: "success" };
+    } catch (error: any) {
+      results.categories = { synced: 0, status: "failed", error: error.message };
+    }
+
+    // 4. Brands
+    try {
+      const r = await this.productsService.syncBrands(tenantId);
+      results.brands = { synced: r.synced, status: "success" };
+    } catch (error: any) {
+      results.brands = { synced: 0, status: "failed", error: error.message };
+    }
+
+    return results;
+  }
 }

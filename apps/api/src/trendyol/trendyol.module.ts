@@ -6,6 +6,7 @@ import { OrdersService } from "./orders/orders.service";
 import { InventoryService } from "./inventory/inventory.service";
 import { FinanceService } from "./finance/finance.service";
 import { ClaimsService } from "./claims/claims.service";
+import { SyncSchedulerService } from "./sync-scheduler.service";
 
 @Module({
   controllers: [TrendyolController],
@@ -16,6 +17,7 @@ import { ClaimsService } from "./claims/claims.service";
     InventoryService,
     FinanceService,
     ClaimsService,
+    SyncSchedulerService,
   ],
   exports: [
     TrendyolService,
@@ -24,6 +26,7 @@ import { ClaimsService } from "./claims/claims.service";
     InventoryService,
     FinanceService,
     ClaimsService,
+    SyncSchedulerService,
   ],
 })
 export class TrendyolModule {}

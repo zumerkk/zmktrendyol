@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, IsOptional, IsString, IsUrl, Max, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, IsUrl, Max, Min } from "class-validator";
 
 export class CreateRivalTargetDto {
   @IsUrl()
@@ -25,3 +25,4 @@ export class CreateRivalTargetDto {
   @IsBoolean()
   isActive?: boolean;
 }
+

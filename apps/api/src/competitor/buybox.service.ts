@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { ScraperEngineService } from "../scraper/scraper-engine.service";
 
 /**
  * BuyboxService — Buybox Takibi & Uyarı Sistemi
@@ -15,7 +16,10 @@ import { PrismaService } from "../common/prisma/prisma.service";
 export class BuyboxService {
   private readonly logger = new Logger(BuyboxService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private scraperEngine: ScraperEngineService,
+  ) {}
 
   /**
    * CRON: 30 dakikada bir buybox kontrolü
@@ -205,12 +209,59 @@ export class BuyboxService {
    */
   private async checkAndRecord(
     competitorProductId: string,
-    _productUrl: string,
+    productUrl: string,
     _tenantId: string,
   ) {
-    // TODO: Integrate with ScraperEngineService for actual page scraping
-    // For now, this is a placeholder — data comes from extension or manual snapshot
-    this.logger.debug(`Buybox check placeholder for: ${_productUrl}`);
+    try {
+      // Actually scrape the product page for buybox data
+      const scrapeData = await this.scraperEngine.scrapeProductPage(productUrl);
+
+      if (!scrapeData || !scrapeData.source) {
+        this.logger.debug(`No scrape data returned for: ${productUrl}`);
+        return;
+      }
+
+      // Determine buybox holder & our position
+      const buyboxSellers = scrapeData.buyboxSellers || [];
+      const buyboxHolder = scrapeData.sellerName || buyboxSellers[0]?.name;
+      const buyboxPrice = scrapeData.price || buyboxSellers[0]?.price;
+
+      // Check if we own the buybox (match by seller connection)
+      const competitorProduct = await this.prisma.competitorProduct.findUnique({
+        where: { id: competitorProductId },
+        include: { tenant: { include: { sellerConnections: { take: 1 } } } },
+      });
+
+      const ourSellerId = competitorProduct?.tenant?.sellerConnections?.[0]?.sellerId;
+      const isOurBuybox = ourSellerId
+        ? buyboxHolder?.toLowerCase().includes(ourSellerId.toLowerCase()) || false
+        : false;
+
+      // Find our position among sellers
+      let ourPosition: number | undefined;
+      if (buyboxSellers.length > 0) {
+        const idx = buyboxSellers.findIndex((s) =>
+          ourSellerId ? s.name?.toLowerCase().includes(ourSellerId.toLowerCase()) : false,
+        );
+        ourPosition = idx >= 0 ? idx + 1 : buyboxSellers.length + 1;
+      }
+
+      // Record the buybox snapshot
+      await this.recordSnapshot(competitorProductId, {
+        buyboxHolder,
+        buyboxPrice,
+        totalSellers: buyboxSellers.length || 1,
+        ourPosition,
+        isOurBuybox,
+        sellersData: buyboxSellers.length > 0 ? buyboxSellers : undefined,
+      });
+
+      this.logger.log(
+        `✅ Buybox scraped: ${productUrl} — Holder: ${buyboxHolder}, Price: ${buyboxPrice}`,
+      );
+    } catch (error: any) {
+      this.logger.error(`Buybox scrape failed for ${productUrl}: ${error.message}`);
+    }
   }
 
   /**

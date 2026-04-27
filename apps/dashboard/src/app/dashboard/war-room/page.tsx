@@ -1,139 +1,264 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { api, isAuthenticated } from "../../../lib/api";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "../../../lib/api";
+import { useAuth } from "../../../lib/useAuth";
 
 export default function WarRoomPage() {
-  const router = useRouter();
-  useEffect(() => { if (!isAuthenticated()) router.push("/login"); }, [router]);
+  const { ready, authed } = useAuth();
+  const qc = useQueryClient();
 
-  const { data: dashboard, isLoading } = useQuery({
-    queryKey: ["war-room"],
-    queryFn: () => api.get("/intelligence/war-room"),
-    enabled: isAuthenticated(),
+  // Pull data from multiple sources for a comprehensive view
+  const shadowQ = useQuery({
+    queryKey: ["wr-shadow"],
+    queryFn: () => api.get("/shadow/dashboard-summary"),
+    enabled: authed,
   });
 
-  const { data: timeline } = useQuery({
-    queryKey: ["war-room-timeline"],
-    queryFn: () => api.get("/intelligence/war-room/timeline"),
-    enabled: isAuthenticated(),
+  const targetsQ = useQuery({
+    queryKey: ["wr-targets"],
+    queryFn: () => api.get("/shadow/targets"),
+    enabled: authed,
   });
 
-  const { data: strategic } = useQuery({
-    queryKey: ["strategic-report"],
-    queryFn: () => api.get("/intelligence/strategic-report"),
-    enabled: isAuthenticated(),
+  const alertsQ = useQuery({
+    queryKey: ["wr-alerts"],
+    queryFn: () => api.get("/shadow/alerts?limit=50"),
+    enabled: authed,
   });
 
-  const wr: any = dashboard || {};
-  const events: any[] = Array.isArray(timeline) ? timeline : [];
-  const report: any = strategic || {};
+  const rivalsQ = useQuery({
+    queryKey: ["wr-rivals"],
+    queryFn: () => api.get("/rivals/targets"),
+    enabled: authed,
+  });
 
-  if (isLoading) {
-    return (
-      <div className="page-content" style={{ textAlign: "center", padding: 80 }}>
-        <div style={{ fontSize: 40, marginBottom: 16 }}>⚔️</div>
-        <div style={{ color: "var(--text-secondary)" }}>Savaş Odası yükleniyor...</div>
-      </div>
-    );
-  }
+  const productsQ = useQuery({
+    queryKey: ["wr-products"],
+    queryFn: () => api.get("/products?limit=20"),
+    enabled: authed,
+  });
+
+  if (!ready) return null;
+
+  const kpi = shadowQ.data?.kpi || {};
+  const targets: any[] = Array.isArray(targetsQ.data?.targets) ? targetsQ.data.targets : Array.isArray(targetsQ.data) ? targetsQ.data : [];
+  const alerts: any[] = Array.isArray(alertsQ.data) ? alertsQ.data : [];
+  const rivals: any[] = Array.isArray(rivalsQ.data) ? rivalsQ.data : Array.isArray(rivalsQ.data?.targets) ? rivalsQ.data.targets : [];
+  const products: any[] = Array.isArray(productsQ.data) ? productsQ.data : Array.isArray(productsQ.data?.products) ? productsQ.data.products : [];
+
+  const oosCount = targets.filter((t) => t.lastStockSignal === "out_of_stock").length;
+  const lowCount = targets.filter((t) => t.lastStockSignal === "critical" || t.lastStockSignal === "low").length;
+  const criticalAlerts = alerts.filter((a) => a.severity === "critical" || a.severity === "emergency");
+
+  // Market positioning analysis
+  const avgCompetitorPrice = targets.length > 0
+    ? targets.reduce((sum, t) => sum + (Number(t.currentPrice) || 0), 0) / targets.length
+    : 0;
+
+  const fmt = (v: any) => `₺${(Number(v) || 0).toLocaleString("tr-TR", { maximumFractionDigits: 0 })}`;
+
+  const threatLevel = criticalAlerts.length > 3 ? "KRİTİK" : criticalAlerts.length > 0 ? "YÜKSEK" : oosCount > 2 ? "ORTA" : "DÜŞÜK";
+  const threatColor = threatLevel === "KRİTİK" ? "#ef4444" : threatLevel === "YÜKSEK" ? "#f97316" : threatLevel === "ORTA" ? "#eab308" : "#22c55e";
 
   return (
-    <>
+    <div>
+      {/* Header */}
       <div className="page-header">
-        <h1 className="page-title">⚔️ Savaş Odası 2.0</h1>
-        <p className="page-subtitle">Rekabet istihbaratı ve stratejik analiz — Gerçek Veriler</p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 28 }}>⚔️</span> Savaş Odası 2.0
+            </h1>
+            <p className="page-subtitle">
+              Rekabet istihbaratı · Pazar konumlandırma · Stratejik analiz — Live Data
+            </p>
+          </div>
+          <div style={{
+            padding: "8px 16px", borderRadius: 10, fontWeight: 800, fontSize: 13,
+            background: `${threatColor}15`, border: `1px solid ${threatColor}40`, color: threatColor,
+          }}>
+            TEHDİT: {threatLevel}
+          </div>
+        </div>
       </div>
 
-      <div className="page-content animate-fade-in">
-        <div className="kpi-grid">
-          <div className="kpi-card">
-            <div className="kpi-label">Toplam Olay</div>
-            <div className="kpi-value">{wr.totalEvents || 0}</div>
-            <div className="kpi-source">Kaynak: <span className="source-badge api">API</span></div>
+      {/* KPI Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 20 }}>
+        {[
+          { label: "İzlenen Rakip", value: targets.length, icon: "🎯", color: "#6366f1" },
+          { label: "Stok Bitti (Rakip)", value: oosCount, icon: "💀", color: "#ef4444" },
+          { label: "Düşük Stok", value: lowCount, icon: "⚠️", color: "#eab308" },
+          { label: "Kritik Alarm", value: criticalAlerts.length, icon: "🚨", color: "#dc2626" },
+          { label: "Ort. Rakip Fiyat", value: fmt(avgCompetitorPrice), icon: "💰", color: "#10b981" },
+          { label: "Bizim Ürün", value: products.length, icon: "📦", color: "#3b82f6" },
+          { label: "Rakip (V1)", value: rivals.length, icon: "👁️", color: "#8b5cf6" },
+        ].map((c) => (
+          <div key={c.label} style={{
+            padding: "14px 16px", borderRadius: 12, background: "var(--bg-secondary)",
+            border: "1px solid var(--border-primary)", position: "relative", overflow: "hidden",
+          }}>
+            <div style={{ position: "absolute", top: -6, right: -6, fontSize: 40, opacity: 0.06 }}>{c.icon}</div>
+            <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 500 }}>{c.label}</div>
+            <div style={{ fontSize: typeof c.value === "string" ? 16 : 24, fontWeight: 900, color: c.color, marginTop: 4 }}>{c.value}</div>
           </div>
-          <div className="kpi-card">
-            <div className="kpi-label">Son 7 Gün</div>
-            <div className="kpi-value">{wr.last7Days || 0}</div>
-            <div className="kpi-source">Kaynak: <span className="source-badge api">API</span></div>
-          </div>
-          <div className="kpi-card">
-            <div className="kpi-label">Kritik Uyarı</div>
-            <div className="kpi-value" style={{ color: "var(--accent-danger)" }}>
-              {wr.criticalAlerts?.length || 0}
-            </div>
-            <div className="kpi-source">Kaynak: <span className="source-badge zmk-engine">ZMK</span></div>
-          </div>
-          <div className="kpi-card">
-            <div className="kpi-label">Rakip Sayısı</div>
-            <div className="kpi-value">{wr.competitorCount || 0}</div>
-            <div className="kpi-source">Kaynak: <span className="source-badge api">API</span></div>
+        ))}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        {/* Threat Matrix */}
+        <div className="card" style={{ padding: 16 }}>
+          <div className="card-title">🔴 Tehdit Matrisi — Kritik Olaylar</div>
+          <div style={{ marginTop: 10, maxHeight: 350, overflowY: "auto" }}>
+            {criticalAlerts.length === 0 && oosCount === 0 ? (
+              <div style={{ padding: 30, textAlign: "center", color: "var(--text-muted)" }}>
+                <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div>
+                <div style={{ fontSize: 13 }}>Aktif tehdit bulunmuyor</div>
+              </div>
+            ) : (
+              <>
+                {/* OOS threats */}
+                {targets.filter((t) => t.lastStockSignal === "out_of_stock").map((t) => (
+                  <div key={`oos-${t.id}`} style={{
+                    padding: "10px 12px", marginBottom: 6, borderRadius: 8,
+                    background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.15)",
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ fontSize: 12, fontWeight: 700 }}>💀 {t.productName || "Ürün"}</div>
+                      <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(239,68,68,0.15)", color: "#ef4444", fontWeight: 800 }}>STOK BİTTİ</span>
+                    </div>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>
+                      {t.brand} · {fmt(t.currentPrice)} · Fırsat: Fiyat artır veya reklam bas
+                    </div>
+                  </div>
+                ))}
+                {/* Critical alerts */}
+                {criticalAlerts.slice(0, 10).map((a) => (
+                  <div key={a.id} style={{
+                    padding: "10px 12px", marginBottom: 6, borderRadius: 8,
+                    background: a.severity === "emergency" ? "rgba(220,38,38,0.05)" : "rgba(249,115,22,0.05)",
+                    border: `1px solid ${a.severity === "emergency" ? "rgba(220,38,38,0.15)" : "rgba(249,115,22,0.15)"}`,
+                  }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: a.severity === "emergency" ? "#ef4444" : "#f97316" }}>{a.title}</div>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>{a.message?.slice(0, 100)}</div>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         </div>
 
-        <div className="grid-2">
-          <div className="card">
-            <div className="card-header">
-              <div className="card-title">📜 Olay Zaman Çizelgesi</div>
-              <span className="source-badge api">API</span>
-            </div>
-            {events.length === 0 ? (
-              <div style={{ padding: 24, textAlign: "center", color: "var(--text-muted)" }}>
-                Henüz rekabet olayı kaydedilmedi
+        {/* Strategic Recommendations */}
+        <div className="card" style={{ padding: 16 }}>
+          <div className="card-title">🎯 Stratejik Öneriler — AI Engine</div>
+          <div style={{ marginTop: 10 }}>
+            {/* Auto-generated strategies based on data */}
+            {[
+              ...(oosCount > 0 ? [{
+                icon: "🔥", title: "OOS Fırsat Penceresi",
+                desc: `${oosCount} rakip ürün stoksuz. Bu ürünlerde fiyat artırma veya reklam bütçesi artırma fırsatı.`,
+                priority: "critical", action: "God Mode → OOS Yağmacı"
+              }] : []),
+              ...(lowCount > 0 ? [{
+                icon: "⚡", title: "Düşük Stok Gözetleme",
+                desc: `${lowCount} rakip ürün düşük stokta. Yakında tükenebilir — hazır olun.`,
+                priority: "warning", action: "Shadow → Stok İzleme"
+              }] : []),
+              ...(targets.length > 0 ? [{
+                icon: "📊", title: "Fiyat Pozisyonu Analizi",
+                desc: `${targets.length} rakip izleniyor. Ort. rakip fiyat: ${fmt(avgCompetitorPrice)}. Fiyatlarınızı karşılaştırın.`,
+                priority: "info", action: "Rakip Takip → Karşılaştırma"
+              }] : []),
+              {
+                icon: "🌐", title: "Tedarik Arbitrajı Taraması",
+                desc: "Rakip fiyatları ile Çin üretici fiyatlarını karşılaştırarak yüksek marjlı ürünleri tespit edin.",
+                priority: "info", action: "God Mode → Arbitraj"
+              },
+              {
+                icon: "🛡️", title: "Buybox Savunma Kontrolü",
+                desc: "Ürünlerinizin buybox'ında yetkisiz satıcı olup olmadığını kontrol edin.",
+                priority: "info", action: "God Mode → Hijacker"
+              },
+            ].map((s, i) => (
+              <div key={i} style={{
+                padding: 12, marginBottom: 8, borderRadius: 10,
+                background: s.priority === "critical" ? "rgba(239,68,68,0.05)" : s.priority === "warning" ? "rgba(234,179,8,0.05)" : "rgba(99,102,241,0.05)",
+                border: `1px solid ${s.priority === "critical" ? "rgba(239,68,68,0.15)" : s.priority === "warning" ? "rgba(234,179,8,0.15)" : "rgba(99,102,241,0.15)"}`,
+              }}>
+                <div style={{ fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+                  {s.icon} {s.title}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{s.desc}</div>
+                <div style={{ fontSize: 10, color: "#6366f1", marginTop: 4, fontWeight: 600 }}>📍 {s.action}</div>
               </div>
-            ) : (
-              events.slice(0, 10).map((e: any, i: number) => (
-                <div key={i} style={{
-                  padding: "12px 16px", borderBottom: "1px solid var(--border-primary)",
-                  display: "flex", gap: 12, alignItems: "flex-start"
+            ))}
+          </div>
+        </div>
+
+        {/* Competitor Radar */}
+        <div className="card" style={{ padding: 16 }}>
+          <div className="card-title">📡 Rakip Radar — Stok Sinyalleri</div>
+          <div style={{ marginTop: 10, maxHeight: 300, overflowY: "auto" }}>
+            {targets.length === 0 ? (
+              <div style={{ padding: 30, textAlign: "center", color: "var(--text-muted)", fontSize: 12 }}>
+                Shadow modülünden rakip hedefi ekleyin
+              </div>
+            ) : targets.slice(0, 15).map((t) => {
+              const sig = t.lastStockSignal || "unknown";
+              const sigColor = sig === "out_of_stock" ? "#ef4444" : sig === "critical" ? "#f97316" : sig === "low" ? "#eab308" : sig === "high" ? "#22c55e" : "#94a3b8";
+              return (
+                <div key={t.id} style={{
+                  padding: "8px 12px", borderBottom: "1px solid var(--border-primary)",
+                  display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12,
                 }}>
-                  <div style={{
-                    width: 8, height: 8, borderRadius: "50%", marginTop: 6,
-                    background: e.impact === "critical" ? "#ef4444" : e.impact === "high" ? "#f59e0b" : "#6366f1"
-                  }} />
+                  <div style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>
+                    {t.productName || "—"}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <span style={{ fontWeight: 700 }}>{fmt(t.currentPrice)}</span>
+                    <span style={{
+                      fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 800,
+                      background: `${sigColor}18`, color: sigColor,
+                    }}>
+                      {t.lastStockCount ?? "?"} adet
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Recent Alert Timeline */}
+        <div className="card" style={{ padding: 16 }}>
+          <div className="card-title">📜 Olay Zaman Çizelgesi</div>
+          <div style={{ marginTop: 10, maxHeight: 300, overflowY: "auto" }}>
+            {alerts.length === 0 ? (
+              <div style={{ padding: 30, textAlign: "center", color: "var(--text-muted)", fontSize: 12 }}>
+                Henüz olay kaydedilmedi. Ajanları çalıştırın.
+              </div>
+            ) : alerts.slice(0, 15).map((a) => {
+              const sev = a.severity || "info";
+              const sevColor = sev === "emergency" ? "#ef4444" : sev === "critical" ? "#f97316" : sev === "warning" ? "#eab308" : "#3b82f6";
+              return (
+                <div key={a.id} style={{
+                  padding: "10px 12px", borderBottom: "1px solid var(--border-primary)",
+                  display: "flex", gap: 10, alignItems: "flex-start",
+                }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", marginTop: 5, flexShrink: 0, background: sevColor }} />
                   <div>
-                    <div style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 13 }}>{e.title}</div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{e.description}</div>
-                    <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}>
-                      {e.createdAt ? new Date(e.createdAt).toLocaleString("tr-TR") : ""}
+                    <div style={{ fontWeight: 700, fontSize: 12 }}>{a.title}</div>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>{a.message?.slice(0, 80)}</div>
+                    <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3 }}>
+                      {a.createdAt ? new Date(a.createdAt).toLocaleString("tr-TR") : ""}
                     </div>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-
-          <div className="card">
-            <div className="card-header">
-              <div className="card-title">🎯 Stratejik Rapor</div>
-              <span className="source-badge zmk-engine">ZMK ENGINE</span>
-            </div>
-            {report.recommendations ? (
-              <div style={{ padding: 16 }}>
-                {(Array.isArray(report.recommendations) ? report.recommendations : []).map((r: any, i: number) => (
-                  <div key={i} style={{
-                    padding: 12, marginBottom: 8, borderRadius: 8,
-                    background: "rgba(99,102,241,0.08)", border: "1px solid var(--border-accent)"
-                  }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: "var(--accent-primary-light)" }}>
-                      {r.title || r}
-                    </div>
-                    {r.description && (
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>{r.description}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ padding: 24, textAlign: "center", color: "var(--text-muted)" }}>
-                Stratejik rapor oluşturuluyor...
-              </div>
-            )}
+              );
+            })}
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

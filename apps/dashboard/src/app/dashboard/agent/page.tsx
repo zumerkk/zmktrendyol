@@ -1,137 +1,223 @@
 "use client";
 
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { api, isAuthenticated } from "../../../lib/api";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "../../../lib/api";
+import { useAuth } from "../../../lib/useAuth";
 
 export default function AgentPage() {
-  const router = useRouter();
-  useEffect(() => { if (!isAuthenticated()) router.push("/login"); }, [router]);
+  const { ready, authed } = useAuth();
+  const qc = useQueryClient();
 
-  const { data: status, isLoading } = useQuery({
-    queryKey: ["agent-status"],
-    queryFn: () => api.get("/api/agent/status"),
-    enabled: isAuthenticated(),
+  const agentsQ = useQuery({
+    queryKey: ["agent-fleet"],
+    queryFn: () => api.get("/shadow/agents/status"),
+    enabled: authed,
+    refetchInterval: 10_000,
   });
 
-  const { data: log } = useQuery({
-    queryKey: ["agent-log"],
-    queryFn: () => api.get("/api/agent/log"),
-    enabled: isAuthenticated(),
+  const logQ = useQuery({
+    queryKey: ["agent-fleet-log"],
+    queryFn: () => api.get("/shadow/agents/log?limit=30"),
+    enabled: authed,
+    refetchInterval: 15_000,
   });
 
-  const { data: insights } = useQuery({
-    queryKey: ["agent-insights"],
-    queryFn: () => api.get("/api/agent/insights"),
-    enabled: isAuthenticated(),
+  const summaryQ = useQuery({
+    queryKey: ["agent-summary"],
+    queryFn: () => api.get("/shadow/dashboard-summary"),
+    enabled: authed,
   });
 
-  const runMutation = useMutation({
-    mutationFn: () => api.post("/api/agent/run"),
+  const runAgent = useMutation({
+    mutationFn: (type: string) => api.post(`/shadow/agents/${type}/run`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["agent-fleet"] });
+      qc.invalidateQueries({ queryKey: ["agent-fleet-log"] });
+      qc.invalidateQueries({ queryKey: ["agent-summary"] });
+    },
   });
 
-  const agent: any = status || {};
-  const logEntries: any[] = Array.isArray(log) ? log : log?.entries || [];
-  const insightList: any[] = Array.isArray(insights) ? insights : insights?.insights || [];
+  const toggleAgent = useMutation({
+    mutationFn: (type: string) => api.post(`/shadow/agents/${type}/toggle`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["agent-fleet"] }),
+  });
 
-  if (isLoading) {
-    return (
-      <div className="page-content" style={{ textAlign: "center", padding: 80 }}>
-        <div style={{ fontSize: 40, marginBottom: 16 }}>🤖</div>
-        <div style={{ color: "var(--text-secondary)" }}>Otonom Ajan yükleniyor...</div>
-      </div>
-    );
-  }
+  if (!ready) return null;
+
+  const agents: any[] = Array.isArray(agentsQ.data) ? agentsQ.data : [];
+  const logEntries: any[] = Array.isArray(logQ.data) ? logQ.data : [];
+  const kpi = summaryQ.data?.kpi || {};
+
+  const totalRuns = agents.reduce((s, a) => s + (a.totalRuns || 0), 0);
+  const totalFindings = agents.reduce((s, a) => s + (a.totalFindings || 0), 0);
+  const activeAgents = agents.filter(a => a.enabled).length;
+  const runningAgents = agents.filter(a => a.isRunning).length;
 
   return (
-    <>
+    <div>
+      {/* Header */}
       <div className="page-header">
-        <h1 className="page-title">🤖 Otonom Ajan</h1>
-        <p className="page-subtitle">ClawBot otonom ajan durumu ve aksiyonları — Gerçek Veriler</p>
-      </div>
-
-      <div className="page-content animate-fade-in">
-        <div className="kpi-grid">
-          <div className="kpi-card">
-            <div className="kpi-label">Ajan Durumu</div>
-            <div className="kpi-value" style={{ color: agent.isActive ? "#22c55e" : "#ef4444" }}>
-              {agent.isActive ? "✅ Aktif" : "⏸ Pasif"}
-            </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 28 }}>🤖</span> Otonom Ajan Filosu
+            </h1>
+            <p className="page-subtitle">
+              5 Özel Ajan · Otonom Gözetleme · Gerçek Zamanlı Analiz · Akıllı Aksiyonlar
+            </p>
           </div>
-          <div className="kpi-card">
-            <div className="kpi-label">Son Çalışma</div>
-            <div className="kpi-value" style={{ fontSize: 14 }}>
-              {agent.lastRun ? new Date(agent.lastRun).toLocaleString("tr-TR") : "Henüz yok"}
-            </div>
-          </div>
-          <div className="kpi-card">
-            <div className="kpi-label">Toplam İçgörü</div>
-            <div className="kpi-value">{insightList.length}</div>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 24 }}>
-          <button
-            onClick={() => runMutation.mutate()}
-            disabled={runMutation.isPending}
-            style={{
-              padding: "12px 32px", borderRadius: 8, border: "none",
-              background: "linear-gradient(135deg, #22d3ee, #06b6d4)", color: "#fff",
-              fontSize: 15, fontWeight: 700, cursor: "pointer"
-            }}
-          >
-            {runMutation.isPending ? "⏳ Çalışıyor..." : "🚀 Ajanı Çalıştır"}
-          </button>
-        </div>
-
-        <div className="grid-2">
-          <div className="card">
-            <div className="card-header">
-              <div className="card-title">📋 Ajan Logu</div>
-              <span className="source-badge api">API</span>
-            </div>
-            {logEntries.length === 0 ? (
-              <div style={{ padding: 24, textAlign: "center", color: "var(--text-muted)" }}>
-                Henüz ajan çalışmadı
-              </div>
-            ) : (
-              logEntries.slice(0, 10).map((e: any, i: number) => (
-                <div key={i} style={{ padding: "10px 16px", borderBottom: "1px solid var(--border-primary)", fontSize: 13 }}>
-                  <span style={{ fontWeight: 600 }}>{e.action || e.type || "—"}</span>
-                  <span style={{ color: "var(--text-muted)", marginLeft: 8 }}>{e.message || e.details || ""}</span>
-                </div>
-              ))
-            )}
-          </div>
-
-          <div className="card">
-            <div className="card-header">
-              <div className="card-title">💡 AI İçgörüleri</div>
-              <span className="source-badge zmk-engine">ZMK</span>
-            </div>
-            {insightList.length === 0 ? (
-              <div style={{ padding: 24, textAlign: "center", color: "var(--text-muted)" }}>
-                Ajanı çalıştırarak içgörü üretin
-              </div>
-            ) : (
-              insightList.slice(0, 5).map((ins: any, i: number) => (
-                <div key={i} style={{
-                  padding: 12, margin: "8px 16px", borderRadius: 8,
-                  background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.2)"
-                }}>
-                  <div style={{ fontWeight: 600, fontSize: 13.5, color: "#22d3ee" }}>
-                    {ins.title || ins.type || "İçgörü"}
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
-                    {ins.description || ins.message || ""}
-                  </div>
-                </div>
-              ))
-            )}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => agents.forEach(a => runAgent.mutate(a.type))}
+              disabled={runAgent.isPending}
+              style={{
+                padding: "10px 20px", borderRadius: 10, border: "none",
+                background: "linear-gradient(135deg, #22d3ee, #06b6d4)",
+                color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(6,182,212,0.3)",
+              }}
+            >
+              {runAgent.isPending ? "⏳ Çalışıyor..." : "🚀 Tümünü Çalıştır"}
+            </button>
           </div>
         </div>
       </div>
-    </>
+
+      {/* KPI */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 20 }}>
+        {[
+          { label: "Aktif Ajan", value: `${activeAgents}/${agents.length}`, icon: "🤖", color: "#22d3ee" },
+          { label: "Şu An Çalışan", value: runningAgents, icon: "⚡", color: "#10b981" },
+          { label: "Toplam Koşu", value: totalRuns, icon: "🔄", color: "#6366f1" },
+          { label: "Toplam Bulgu", value: totalFindings, icon: "🔍", color: "#f97316" },
+          { label: "İzlenen Hedef", value: kpi.totalTargets || 0, icon: "🎯", color: "#3b82f6" },
+          { label: "Okunmamış Alarm", value: kpi.unreadAlerts || 0, icon: "🔔", color: "#ef4444" },
+        ].map((c) => (
+          <div key={c.label} style={{
+            padding: "14px 16px", borderRadius: 12, background: "var(--bg-secondary)",
+            border: "1px solid var(--border-primary)", position: "relative", overflow: "hidden",
+          }}>
+            <div style={{ position: "absolute", top: -6, right: -6, fontSize: 40, opacity: 0.06 }}>{c.icon}</div>
+            <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 500 }}>{c.label}</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: c.color, marginTop: 4 }}>{c.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Agent Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 16, marginBottom: 20 }}>
+        {agents.map((agent) => (
+          <div key={agent.type} className="card" style={{
+            padding: 16, position: "relative", overflow: "hidden",
+            border: agent.isRunning ? "1px solid rgba(16,185,129,0.4)" : "1px solid var(--border-primary)",
+          }}>
+            {agent.isRunning && (
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, height: 3,
+                background: "linear-gradient(90deg, #10b981, #059669, #10b981)",
+                backgroundSize: "200% 100%", animation: "shimmer 1.5s infinite",
+              }} />
+            )}
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 28 }}>{agent.emoji}</span>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 15 }}>{agent.name}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{agent.description}</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 14 }}>
+              <div style={{ textAlign: "center", padding: 8, borderRadius: 8, background: "var(--bg-secondary)" }}>
+                <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Çalışma</div>
+                <div style={{ fontSize: 18, fontWeight: 800 }}>{agent.totalRuns}</div>
+              </div>
+              <div style={{ textAlign: "center", padding: 8, borderRadius: 8, background: "var(--bg-secondary)" }}>
+                <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Bulgu</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#f97316" }}>{agent.totalFindings}</div>
+              </div>
+              <div style={{ textAlign: "center", padding: 8, borderRadius: 8, background: "var(--bg-secondary)" }}>
+                <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Durum</div>
+                <div style={{ fontSize: 18 }}>{agent.enabled ? "✅" : "⛔"}</div>
+              </div>
+            </div>
+
+            {agent.lastRunAt && (
+              <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 8 }}>
+                Son: {new Date(agent.lastRunAt).toLocaleString("tr-TR")}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+              <button
+                onClick={() => runAgent.mutate(agent.type)}
+                disabled={agent.isRunning || runAgent.isPending}
+                style={{
+                  flex: 1, padding: "8px", borderRadius: 8, border: "none",
+                  background: agent.isRunning ? "rgba(100,100,100,0.2)" : "linear-gradient(135deg, #6366f1, #818cf8)",
+                  color: "#fff", fontWeight: 700, fontSize: 11, cursor: agent.isRunning ? "wait" : "pointer",
+                }}
+              >
+                {agent.isRunning ? "⏳ Çalışıyor" : "▶ Çalıştır"}
+              </button>
+              <button
+                onClick={() => toggleAgent.mutate(agent.type)}
+                style={{
+                  padding: "8px 12px", borderRadius: 8, border: "none",
+                  background: agent.enabled ? "rgba(239,68,68,0.1)" : "rgba(34,197,94,0.1)",
+                  color: agent.enabled ? "#ef4444" : "#22c55e",
+                  fontWeight: 700, fontSize: 11, cursor: "pointer",
+                }}
+              >
+                {agent.enabled ? "⏸ Durdur" : "▶ Aktifleştir"}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Agent Log */}
+      <div className="card" style={{ padding: 16 }}>
+        <div className="card-title">📜 Ajan Görev Geçmişi</div>
+        <div style={{ marginTop: 10, maxHeight: 300, overflowY: "auto" }}>
+          {logEntries.length === 0 ? (
+            <div style={{ padding: 30, textAlign: "center", color: "var(--text-muted)", fontSize: 12 }}>
+              Henüz görev kaydı yok — bir ajan çalıştırın
+            </div>
+          ) : logEntries.map((task: any) => (
+            <div key={task.id} style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              padding: "10px 12px", borderBottom: "1px solid var(--border-primary)", fontSize: 12,
+            }}>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <span style={{
+                  padding: "3px 8px", borderRadius: 6, fontWeight: 700, fontSize: 10,
+                  background: task.status === "completed" ? "rgba(34,197,94,0.1)" : task.status === "failed" ? "rgba(239,68,68,0.1)" : "rgba(234,179,8,0.1)",
+                  color: task.status === "completed" ? "#22c55e" : task.status === "failed" ? "#ef4444" : "#eab308",
+                }}>{task.status}</span>
+                <span style={{ fontWeight: 600 }}>{task.agentType}</span>
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {task.findings > 0 && (
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#f97316" }}>{task.findings} bulgu</span>
+                )}
+                <span style={{ color: "var(--text-muted)", fontSize: 10 }}>
+                  {new Date(task.createdAt).toLocaleString("tr-TR")}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+      `}</style>
+    </div>
   );
 }

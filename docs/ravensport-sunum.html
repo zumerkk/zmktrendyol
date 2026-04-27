@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RavenSport — Şirket Tanıtımı</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0f;
+            color: #e8e8f0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ===== SAYFA ===== */
+        .page {
+            min-height: 100vh;
+            position: relative;
+            padding: 50px 60px;
+            overflow: hidden;
+        }
+        .page::before {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #ff8c00, #ff6600, #cc5500);
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .logo-area img {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            object-fit: cover;
+        }
+        .brand-name {
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+        }
+        .brand-name span { color: #ff8c00; }
+        .page-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+        }
+
+        /* ===== GİRİŞ BÖLÜMÜ ===== */
+        .intro {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+            margin-bottom: 36px;
+        }
+        .intro h1 {
+            font-size: 36px;
+            font-weight: 900;
+            line-height: 1.15;
+            letter-spacing: -1.5px;
+            margin-bottom: 16px;
+        }
+        .intro h1 span { color: #ff8c00; }
+        .intro p {
+            font-size: 15px;
+            color: #999;
+            line-height: 1.7;
+        }
+        .intro-img {
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255,140,0,0.15);
+        }
+        .intro-img img {
+            width: 100%;
+            display: block;
+        }
+
+        /* ===== RAKAMLAR ===== */
+        .numbers {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 36px;
+        }
+        .num-card {
+            background: rgba(255,140,0,0.04);
+            border: 1px solid rgba(255,140,0,0.1);
+            border-radius: 14px;
+            padding: 20px;
+            text-align: center;
+        }
+        .num-card .big {
+            font-size: 28px;
+            font-weight: 900;
+            color: #ff8c00;
+        }
+        .num-card .label {
+            font-size: 11px;
+            color: #666;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ===== BİLGİ KARTLARI ===== */
+        .info-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .info-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .info-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+        .info-card .info-body {
+            padding: 18px 20px;
+        }
+        .info-card h3 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .info-card p {
+            font-size: 12px;
+            color: #888;
+            line-height: 1.6;
+        }
+
+        /* ===== MARKALAR ===== */
+        .brands-section {
+            margin-bottom: 28px;
+        }
+        .brands-section h3 {
+            font-size: 13px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        .brand-chips {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .brand-chip {
+            padding: 8px 18px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .brand-chip.active {
+            background: rgba(255,140,0,0.1);
+            border: 1px solid rgba(255,140,0,0.25);
+            color: #ff8c00;
+        }
+        .brand-chip.pending {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #666;
+        }
+
+        /* ===== SATIŞ KANALLARI ===== */
+        .channels {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .channel {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* ===== İLETİŞİM KUTUSU ===== */
+        .contact-box {
+            background: rgba(255,140,0,0.04);
+            border: 1px solid rgba(255,140,0,0.12);
+            border-radius: 16px;
+            padding: 24px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .contact-box .company-info {
+            font-size: 12px;
+            color: #888;
+            line-height: 1.6;
+        }
+        .contact-box .company-info strong {
+            color: #ccc;
+        }
+        .contact-items {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* ============================================
+           SAYFA 2: YAZILIM — BASİT FAYDALAR
+           ============================================ */
+        .yazilim-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .yazilim-header h2 {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
+        .yazilim-header h2 span { color: #ff8c00; }
+        .yazilim-header p {
+            font-size: 14px;
+            color: #777;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* ===== ÖZELLİK SATIRLARI ===== */
+        .feature-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            align-items: center;
+            margin-bottom: 36px;
+            padding-bottom: 36px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .feature-row:last-of-type {
+            border-bottom: none;
+            margin-bottom: 24px;
+        }
+        .feature-row.reverse {
+            direction: rtl;
+        }
+        .feature-row.reverse > * {
+            direction: ltr;
+        }
+        .feature-text {
+            padding: 0 10px;
+        }
+        .feature-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(255,140,0,0.1);
+            color: #ff8c00;
+            font-size: 14px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+        .feature-text h3 {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        .feature-text p {
+            font-size: 14px;
+            color: #999;
+            line-height: 1.7;
+        }
+        .feature-text .benefit {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 6px 14px;
+            background: rgba(255,140,0,0.08);
+            border: 1px solid rgba(255,140,0,0.15);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #ff8c00;
+        }
+        .feature-img {
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        }
+        .feature-img img {
+            width: 100%;
+            display: block;
+        }
+
+        /* ===== ÖZET BANNER ===== */
+        .summary-banner {
+            background: linear-gradient(135deg, rgba(255,140,0,0.06), rgba(255,102,0,0.04));
+            border: 1px solid rgba(255,140,0,0.12);
+            border-radius: 16px;
+            padding: 28px 32px;
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .summary-banner h3 {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+        .summary-banner h3 span { color: #ff8c00; }
+        .summary-banner p {
+            font-size: 13px;
+            color: #888;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            text-align: center;
+            font-size: 11px;
+            color: #444;
+            padding-top: 12px;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media(max-width:768px) {
+            .page { padding: 30px 24px; }
+            .intro { grid-template-columns: 1fr; }
+            .numbers { grid-template-columns: repeat(2, 1fr); }
+            .info-row { grid-template-columns: 1fr; }
+            .feature-row { grid-template-columns: 1fr; }
+            .feature-row.reverse { direction: ltr; }
+        }
+
+        /* ===== PRINT ===== */
+        @media print {
+            body { background: #0a0a0f !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .page { page-break-after: always; break-after: page; }
+            .page:last-child { page-break-after: avoid; }
+            @page { size: A4 portrait; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ======================================================================
+     SAYFA 1: BİZ KİMİZ — RAVENSPORT ŞİRKET TANITIMI
+     ====================================================================== -->
+<div class="page" id="sayfa-1">
+
+    <div class="header">
+        <div class="logo-area">
+            <img src="file:///Users/zumerkekillioglu/.gemini/antigravity/brain/7159021f-862d-4e89-a4f0-4d4b905d072b/media__1776664504419.jpg" alt="RavenSport">
+            <div class="brand-name"><span>RAVEN</span>SPORT</div>
+        </div>
+        <div class="page-label">Şirket Tanıtımı · 2026</div>
+    </div>
+
+    <!-- GİRİŞ -->
+    <div class="intro">
+        <div>
+            <h1>
+                Güvenilir İş Ortağınız,<br>
+                <span>RavenSport</span>
+            </h1>
+            <p>
+                Ayakkabı lojistiği ve e-ticaret operasyonları alanında; hız, doğruluk 
+                ve sürdürülebilir büyüme odaklı bir iş modeli ile faaliyet gösteriyoruz. 
+                Global markalar için yalnızca bir tedarikçi değil, uzun vadeli bir 
+                stratejik çözüm ortağıyız.
+            </p>
+        </div>
+        <div class="intro-img">
+            <img src="file:///Users/zumerkekillioglu/.gemini/antigravity/brain/7159021f-862d-4e89-a4f0-4d4b905d072b/brand_partnerships_1776662822360.png" 
+                 alt="Ürün Portföyü">
+        </div>
+    </div>
+
+    <!-- RAKAMLAR -->
+    <div class="numbers">
+        <div class="num-card">
+            <div class="big">500m²</div>
+            <div class="label">Depo Alanı</div>
+        </div>
+        <div class="num-card">
+            <div class="big">20.000</div>
+            <div class="label">Çift Kapasite</div>
+        </div>
+        <div class="num-card">
+            <div class="big">20M₺</div>
+            <div class="label">DBS Limiti</div>
+        </div>
+        <div class="num-card">
+            <div class="big">60M₺</div>
+            <div class="label">Fin. Kapasite</div>
+        </div>
+    </div>
+
+    <!-- DEPO & OFİS GÖRSELLERİ -->
+    <div class="info-row">
+        <div class="info-card">
+            <img src="file:///Users/zumerkekillioglu/Desktop/ZMKTRENDYOL/lojistik.png" 
+                 alt="Lojistik Merkez">
+            <div class="info-body">
+                <h3>📦 Lojistik Merkez</h3>
+                <p>
+                    500m² kapalı alan, optimize stok yerleşimi, hızlı ürün giriş-çıkış yönetimi. 
+                    Minimum hata oranı ile maksimum verimlilik. Siparişten sevkiyata kadar uçtan uca kontrol.
+                </p>
+            </div>
+        </div>
+        <div class="info-card">
+            <img src="file:///Users/zumerkekillioglu/Desktop/ZMKTRENDYOL/operasyon.jpeg" 
+                 alt="Operasyon Merkezi">
+            <div class="info-body">
+                <h3>🏢 Operasyon Merkezi</h3>
+                <p>
+                    Yönetim ofisi, toplantı alanları ve modern çalışma ortamı. 
+                    4 kişilik yazılım ekibi, dedicated sunucu altyapısı. 
+                    Tüm süreçler dijital ve izlenebilir.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MARKALAR -->
+    <div class="brands-section">
+        <h3>İş Birliklerimiz</h3>
+        <div class="brand-chips">
+            <span class="brand-chip active">✅ Adidas (As Spor)</span>
+            <span class="brand-chip active">✅ Nike</span>
+            <span class="brand-chip active">✅ Puma</span>
+            <span class="brand-chip pending">🤝 Vans</span>
+            <span class="brand-chip pending">🤝 TheNorthFace</span>
+            <span class="brand-chip pending">🤝 Salomon</span>
+            <span class="brand-chip pending">🤝 UnderArmour</span>
+            <span class="brand-chip pending">🤝 Skechers</span>
+            <span class="brand-chip pending">🤝 Converse</span>
+        </div>
+    </div>
+
+    <!-- SATIŞ KANALLARI -->
+    <div class="channels">
+        <div class="channel">🛒 Trendyol</div>
+        <div class="channel">📦 Hepsiburada</div>
+        <div class="channel">🌐 Amazon TR</div>
+        <div class="channel">📊 N11</div>
+    </div>
+
+    <!-- İLETİŞİM -->
+    <div class="contact-box">
+        <div class="company-info">
+            <strong>Entaş Online Satış İthalat ve İhracat San. Tic. Ltd. Şti.</strong><br>
+            Yenişehir Mah. Fevzi Çakmak Cad. No: 46/C Yahşihan, Kırıkkale
+        </div>
+        <div class="contact-items">
+            <div class="contact-item">📱 +90 555 009 93 22</div>
+            <div class="contact-item">📧 ravensport@outlook.com.tr</div>
+        </div>
+    </div>
+
+    <div class="footer">RavenSport © 2026 · Güven · Süreklilik · Operasyonel Mükemmeliyet</div>
+</div>
+
+<!-- ======================================================================
+     SAYFA 2: YAZILIMIMIZ NE YAPIYOR — BASİT, SAMİMİ ANLATIM
+     ====================================================================== -->
+<div class="page" id="sayfa-2">
+
+    <div class="header">
+        <div class="logo-area">
+            <img src="file:///Users/zumerkekillioglu/.gemini/antigravity/brain/7159021f-862d-4e89-a4f0-4d4b905d072b/media__1776664504419.jpg" alt="RavenSport">
+            <div class="brand-name"><span>RAVEN</span>SPORT</div>
+        </div>
+        <div class="page-label">Yazılım Altyapımız · Sayfa 2</div>
+    </div>
+
+    <!-- YAZILIM GİRİŞ -->
+    <div class="yazilim-header">
+        <h2>Yazılımımız ile <span>Neler Yapabiliyoruz?</span></h2>
+        <p>
+            Bünyemizde geliştirdiğimiz yazılım sistemi sayesinde, 
+            e-ticarette rakiplerimizden her zaman bir adım önde oluyoruz.
+        </p>
+    </div>
+
+    <!-- ÖZELLİK 1: RAKİP FİYAT TAKİBİ -->
+    <div class="feature-row">
+        <div class="feature-text">
+            <div class="feature-number">1</div>
+            <h3>Rakip Fiyat Takibi</h3>
+            <p>
+                Rakiplerimizin fiyatlarını anlık olarak izliyoruz. 
+                Fiyat değişikliklerini anında görüp, her zaman 
+                en doğru ve rekabetçi fiyatı belirliyoruz. 
+                Buybox'ı kaybetmeden, kârlılığı koruyoruz.
+            </p>
+            <div class="benefit">→ Her zaman doğru fiyat, maksimum satış</div>
+        </div>
+        <div class="feature-img">
+            <img src="file:///Users/zumerkekillioglu/.gemini/antigravity/brain/7159021f-862d-4e89-a4f0-4d4b905d072b/rivals_dashboard_1776675110229.png" 
+                 alt="Rakip Fiyat Takibi — ZMK Rakip İstihbarat Merkezi">
+        </div>
+    </div>
+
+    <!-- ÖZELLİK 2: SATIŞ VERİLERİ ANALİZİ -->
+    <div class="feature-row reverse">
+        <div class="feature-text">
+            <div class="feature-number">2</div>
+            <h3>Satış Verisi Analizi</h3>
+            <p>
+                Hangi ürün ne kadar satıyor, hangisinden ne kadar kâr ediyoruz, 
+                hangisinden vazgeçmemiz lazım — hepsini tek ekrandan görüyoruz. 
+                Kararlarımızı hisse değil, veriye dayandırıyoruz.
+            </p>
+            <div class="benefit">→ Veriye dayalı kararlar, net kârlılık görünümü</div>
+        </div>
+        <div class="feature-img">
+            <img src="file:///Users/zumerkekillioglu/.gemini/antigravity/brain/7159021f-862d-4e89-a4f0-4d4b905d072b/dashboard_kpi_center_1776675263056.png" 
+                 alt="Satış Verisi Analizi — ZMK Komuta Merkezi">
+        </div>
+    </div>
+
+    <!-- ÖZELLİK 3: RAKİP STOK TAKİBİ -->
+    <div class="feature-row">
+        <div class="feature-text">
+            <div class="feature-number">3</div>
+            <h3>Rakip Stok Takibi</h3>
+            <p>
+                Rakiplerimizin stok durumunu takip ediyoruz.
+                Rakibin stoğu bittiğinde anında haberimiz oluyor — 
+                o fırsatı değerlendirip satışlarımızı artırıyoruz. 
+                Piyasadaki boşlukları zamanında yakalıyoruz.
+            </p>
+            <div class="benefit">→ Rakip stoğu bitti mi? Biz hazırız</div>
+        </div>
+        <div class="feature-img">
+            <img src="file:///Users/zumerkekillioglu/.gemini/antigravity/brain/7159021f-862d-4e89-a4f0-4d4b905d072b/insights_dashboard_1776675328719.png" 
+                 alt="Rakip Stok Takibi — ZMK AI Aksiyon Paneli">
+        </div>
+    </div>
+
+    <!-- ÖZELLİK 4: STOK PLANLAMA & BÜYÜME -->
+    <div class="feature-row reverse">
+        <div class="feature-text">
+            <div class="feature-number">4</div>
+            <h3>Stok Planlama & Hacimli Büyüme</h3>
+            <p>
+                Ocak'tan Aralık'a kadar stok planlamızı bugünden yapıyoruz. 
+                Hangi dönem ne kadar ürün lazım, ne zaman yeniden sipariş 
+                vermemiz gerekiyor — hepsini sistem otomatik hesaplıyor. 
+                Planlı, hacimli ve sağlam bir büyüme sergiliyoruz.
+            </p>
+            <div class="benefit">→ 12 ay boyunca planlı, kontrollü büyüme</div>
+        </div>
+        <div class="feature-img">
+            <img src="file:///Users/zumerkekillioglu/.gemini/antigravity/brain/7159021f-862d-4e89-a4f0-4d4b905d072b/zmk_products_page_1776675302884.png" 
+                 alt="Stok Planlama — ZMK Ürün Yönetimi">
+        </div>
+    </div>
+
+    <!-- FİNAL MESAJI -->
+    <div class="summary-banner" style="margin-bottom: 20px;">
+        <h3>Teknolojiyi <span>Satışa Dönüştürüyoruz</span></h3>
+        <p style="max-width: 780px; font-size: 12.5px; line-height: 1.8;">
+            Tedarikçilerimizle kurmayı hedeflediğimiz iş birliği; sürdürülebilirlik, öngörülebilirlik 
+            ve karşılıklı kazanç ilkelerine dayanmaktadır. Gerek dijital satış verilerimizi analiz ederek 
+            aylık performansı önceden öngörebilmemiz, gerekse sezonluk talep projeksiyonlarımız sayesinde 
+            yüksek hacimli ve planlı alımlar gerçekleştirme kapasitesine sahibiz. Bu doğrultuda, düzenli 
+            stok erişimi ve rekabetçi fiyatlandırma koşulları sağlandığı takdirde, markalarınızla uzun vadeli, 
+            istikrarlı ve ölçeklenebilir bir ticari ortaklık kurmayı taahhüt ediyoruz.
+        </p>
+    </div>
+
+    <!-- İLETİŞİM -->
+    <div class="contact-box" style="flex-direction: column; align-items: center; text-align: center; gap: 12px;">
+        <div style="font-size: 18px; font-weight: 800; letter-spacing: -0.5px; color: #e8e8f0;">
+            Hilmi Başat
+        </div>
+        <div style="font-size: 12px; color: #ff8c00; text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">
+            Chief Executive Officer
+        </div>
+        <div style="width: 40px; height: 1px; background: rgba(255,140,0,0.3); margin: 4px 0;"></div>
+        <div class="contact-items" style="justify-content: center;">
+            <div class="contact-item">📱 +90 555 009 93 22</div>
+            <div class="contact-item">📧 ravensport@outlook.com.tr</div>
+        </div>
+        <div class="company-info" style="margin-top: 4px;">
+            <strong>Entaş Online Satış İthalat ve İhracat San. Tic. Ltd. Şti.</strong><br>
+            Yenişehir Mah. Fevzi Çakmak Cad. No: 46/C Yahşihan, Kırıkkale
+        </div>
+    </div>
+
+    <div class="footer">RavenSport © 2026 · Güven · Süreklilik · Operasyonel Mükemmeliyet</div>
+</div>
+
+</body>
+</html>

@@ -1,19 +1,19 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { api, isAuthenticated } from "../../../lib/api";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { api } from "../../../lib/api";
+import { useAuth } from "../../../lib/useAuth";
 
 export default function ReturnsPage() {
-  const router = useRouter();
-  useEffect(() => { if (!isAuthenticated()) router.push("/login"); }, [router]);
+  const { ready, authed } = useAuth();
 
   const { data, isLoading } = useQuery({
     queryKey: ["claims"],
     queryFn: () => api.get("/trendyol/claims/analytics?days=30"),
-    enabled: isAuthenticated(),
+    enabled: authed,
   });
+
+  if (!ready) return null;
 
   const claims: any = data || {};
   const claimList: any[] = claims.recentClaims || claims.claims || [];
@@ -35,7 +35,7 @@ export default function ReturnsPage() {
   }
 
   return (
-    <>
+    <div>
       <div className="page-header">
         <h1 className="page-title">🔄 İade Yönetimi</h1>
         <p className="page-subtitle">İade takibi ve analiz — Gerçek Veriler</p>
@@ -130,6 +130,6 @@ export default function ReturnsPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

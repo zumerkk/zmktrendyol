@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { NotificationsGateway } from "../notifications/notifications.gateway";
 import { OrchestratorService } from "../ai/orchestrator.service";
@@ -15,7 +15,7 @@ import { ZeusAdsService } from "../god-mode/zeus-ads.service";
  * Telegraf.js kullanır.
  */
 @Injectable()
-export class TelegramBotService implements OnModuleInit {
+export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TelegramBotService.name);
   private bot: any = null;
 
@@ -39,10 +39,40 @@ export class TelegramBotService implements OnModuleInit {
       this.bot = new Telegraf(token);
 
       this.setupCommands();
-      await this.bot.launch();
-      this.logger.log("🤖 Telegram bot started successfully");
+
+      // Drop pending updates to avoid 409 Conflict with other instances
+      try {
+        await this.bot.telegram.deleteWebhook({ drop_pending_updates: true });
+      } catch {}
+
+      try {
+        await this.bot.launch({ dropPendingUpdates: true });
+        this.logger.log("🤖 Telegram bot started successfully");
+      } catch (launchError: any) {
+        if (launchError.message?.includes("409")) {
+          this.logger.warn("Telegram 409 conflict — waiting 3s and retrying...");
+          await new Promise((r) => setTimeout(r, 3000));
+          try {
+            await this.bot.telegram.deleteWebhook({ drop_pending_updates: true });
+            await this.bot.launch({ dropPendingUpdates: true });
+            this.logger.log("🤖 Telegram bot started on retry");
+          } catch (retryErr: any) {
+            this.logger.warn(`Telegram bot retry failed: ${retryErr.message} — bot will work without polling`);
+            this.bot = null;
+          }
+        } else {
+          throw launchError;
+        }
+      }
     } catch (error: any) {
       this.logger.warn(`Telegram bot failed to start: ${error.message}`);
+    }
+  }
+
+  async onModuleDestroy() {
+    if (this.bot) {
+      this.bot.stop("SIGTERM");
+      this.logger.log("🤖 Telegram bot stopped gracefully");
     }
   }
 

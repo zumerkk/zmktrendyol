@@ -1,31 +1,32 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { api, isAuthenticated } from "../../../lib/api";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { api } from "../../../lib/api";
+import { useAuth } from "../../../lib/useAuth";
 
 export default function InsightsPage() {
-  const router = useRouter();
-  useEffect(() => { if (!isAuthenticated()) router.push("/login"); }, [router]);
+  const { ready, authed } = useAuth();
 
   const { data: insights, isLoading } = useQuery({
     queryKey: ["command-center"],
     queryFn: () => api.get("/command-center/insights"),
-    enabled: isAuthenticated(),
+    enabled: authed,
   });
 
   const { data: health } = useQuery({
     queryKey: ["quick-health"],
     queryFn: () => api.get("/intelligence/health"),
-    enabled: isAuthenticated(),
+    enabled: authed,
   });
 
   const { data: gamification } = useQuery({
     queryKey: ["gamification"],
     queryFn: () => api.get("/intelligence/gamification"),
-    enabled: isAuthenticated(),
+    enabled: authed,
   });
+
+  // SSR guard — prevents hydration mismatch
+  if (!ready) return null;
 
   const insightList: any[] = Array.isArray(insights) ? insights : insights?.insights || [];
   const healthData: any = health || {};
@@ -41,7 +42,7 @@ export default function InsightsPage() {
   }
 
   return (
-    <>
+    <div>
       <div className="page-header">
         <h1 className="page-title" style={{ color: "var(--accent-warning)" }}>💡 Bugün Ne Yapmalıyım?</h1>
         <p className="page-subtitle">AI destekli aksiyon önerileri ve mağaza sağlık skoru</p>
@@ -112,6 +113,6 @@ export default function InsightsPage() {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -1,31 +1,31 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { api, isAuthenticated } from "../../../lib/api";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { api } from "../../../lib/api";
+import { useAuth } from "../../../lib/useAuth";
 
 export default function AuditPage() {
-  const router = useRouter();
-  useEffect(() => { if (!isAuthenticated()) router.push("/login"); }, [router]);
+  const { ready, authed } = useAuth();
 
   const { data: usage } = useQuery({
     queryKey: ["usage-stats"],
     queryFn: () => api.get("/intelligence/usage"),
-    enabled: isAuthenticated(),
+    enabled: authed,
   });
 
   const { data: routes } = useQuery({
     queryKey: ["system-routes"],
     queryFn: () => api.get("/system/routes"),
-    enabled: isAuthenticated(),
+    enabled: authed,
   });
+
+  if (!ready) return null;
 
   const usageData: any = usage || {};
   const routeList: any[] = Array.isArray(routes) ? routes : routes?.routes || [];
 
   return (
-    <>
+    <div>
       <div className="page-header">
         <h1 className="page-title">📋 Denetim İzleri</h1>
         <p className="page-subtitle">Kullanım istatistikleri ve API rotaları</p>
@@ -83,6 +83,6 @@ export default function AuditPage() {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

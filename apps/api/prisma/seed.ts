@@ -86,7 +86,7 @@ async function main() {
   );
   console.log('✅ Automation Rule: OOS Sniper');
 
-  // ─── 6. Rival Watch Targets ───────────────────
+  // ─── 6. Rival Watch Targets (Trendyol) ────────
   const rivals = [
     'https://www.trendyol.com/adidas/vl-court-base-id3711-beyaz-gunluk-sneaker-p-815376805',
     'https://www.trendyol.com/adidas/runfalcon-5-w-kadin-kosu-ayakkabisi-ih7759-p-828498459?boutiqueId=683429&merchantId=968',
@@ -94,15 +94,22 @@ async function main() {
     'https://www.trendyol.com/adidas/tensaur-sport-2-0-beyaz-siyah-unisex-sneaker-gw6422-p-343284968?boutiqueId=690236&merchantId=968',
   ];
 
-  for (const url of rivals) {
+  // uniq (URL string)
+  const uniqueRivals = Array.from(new Set(rivals.map((u) => u.trim()))).filter(Boolean);
+
+  for (const url of uniqueRivals) {
+    const u = new URL(url);
+    const merchantId = u.searchParams.get('merchantId');
+    const boutiqueId = u.searchParams.get('boutiqueId');
+
     await pool.query(
-      `INSERT INTO rival_watch_targets (id, tenant_id, url, scan_interval_minutes, is_active, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, 15, true, NOW(), NOW())
+      `INSERT INTO rival_watch_targets (id, tenant_id, url, merchant_id, boutique_id, scan_interval_minutes, is_active, created_at, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, 15, true, NOW(), NOW())
        ON CONFLICT (tenant_id, url) DO NOTHING`,
-      [tenantId, url],
+      [tenantId, url, merchantId, boutiqueId],
     );
   }
-  console.log(`✅ Rival targets: ${rivals.length} url`);
+  console.log(`✅ Rival targets: ${uniqueRivals.length} url`);
 
   // ─── Summary ──────────────────────────────────
   console.log('\n🎉 Seed tamamlandı!');

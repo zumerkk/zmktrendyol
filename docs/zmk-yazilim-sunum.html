@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZMK Technology — Yazılım Yetkinlik Sunumu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a1a;
+            --bg-secondary: #12122a;
+            --bg-card: rgba(20, 20, 50, 0.6);
+            --accent-blue: #4f8fff;
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06d6a0;
+            --accent-pink: #f72585;
+            --accent-orange: #ff6b35;
+            --text-primary: #f0f0ff;
+            --text-secondary: #a0a0c0;
+            --text-muted: #6b6b8a;
+            --gradient-main: linear-gradient(135deg, #4f8fff, #8b5cf6, #f72585);
+            --gradient-card: linear-gradient(145deg, rgba(79,143,255,0.08), rgba(139,92,246,0.08));
+            --border-subtle: rgba(139,92,246,0.15);
+            --shadow-glow: 0 0 80px rgba(79,143,255,0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ==================== PAGE SETUP FOR PRINT ==================== */
+        @media print {
+            body { background: #0a0a1a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .page { page-break-after: always; break-after: page; }
+            .page:last-child { page-break-after: avoid; }
+            @page { size: A4 landscape; margin: 0; }
+        }
+
+        .page {
+            width: 100%;
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ==================== BACKGROUND FX ==================== */
+        .bg-grid {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                radial-gradient(circle at 1px 1px, rgba(79,143,255,0.03) 1px, transparent 0);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+        .bg-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.25;
+            pointer-events: none;
+        }
+        .bg-orb-1 { width: 500px; height: 500px; background: var(--accent-blue); top: -150px; right: -100px; }
+        .bg-orb-2 { width: 400px; height: 400px; background: var(--accent-purple); bottom: -100px; left: -100px; }
+        .bg-orb-3 { width: 350px; height: 350px; background: var(--accent-pink); top: 50%; left: 50%; transform: translate(-50%,-50%); opacity: 0.1; }
+
+        /* ==================== TYPOGRAPHY ==================== */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 16px;
+            border-radius: 100px;
+            border: 1px solid var(--border-subtle);
+            background: rgba(79,143,255,0.08);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--accent-blue);
+        }
+        .badge::before {
+            content: '';
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
+
+        h1 {
+            font-size: clamp(32px, 5vw, 56px);
+            font-weight: 900;
+            line-height: 1.1;
+            letter-spacing: -1.5px;
+        }
+        h1 .gradient-text {
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            font-size: clamp(22px, 3vw, 34px);
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        h3 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: clamp(14px, 1.5vw, 18px);
+            color: var(--text-secondary);
+            line-height: 1.6;
+            max-width: 600px;
+        }
+
+        /* ==================== LAYOUT ==================== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .flex-row {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+        }
+        .flex-col { flex-direction: column; }
+        .flex-1 { flex: 1; }
+
+        /* ==================== PAGE 1: HERO / COVER ==================== */
+        .hero-page {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 60px 0;
+        }
+
+        .hero-content {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 60px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .hero-left {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .hero-left h1 {
+            margin-top: 16px;
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .stat-card {
+            background: var(--gradient-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        .stat-card .stat-number {
+            font-size: 28px;
+            font-weight: 900;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .stat-card .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        .hero-image-wrapper {
+            position: relative;
+        }
+        .hero-image-wrapper img {
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.5), 0 0 60px rgba(79,143,255,0.15);
+            border: 1px solid rgba(79,143,255,0.1);
+        }
+        .hero-image-glow {
+            position: absolute;
+            inset: -20px;
+            background: radial-gradient(ellipse at center, rgba(79,143,255,0.08), transparent 70%);
+            pointer-events: none;
+        }
+
+        /* ==================== TECH TAGS ==================== */
+        .tech-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .tech-tag {
+            padding: 4px 12px;
+            border-radius: 8px;
+            background: rgba(139,92,246,0.1);
+            border: 1px solid rgba(139,92,246,0.2);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent-purple);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* ==================== PAGE 2: CAPABILITIES ==================== */
+        .capabilities-page {
+            padding: 80px 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        .section-header h2 { margin-top: 12px; }
+        .section-header .subtitle { margin: 12px auto 0; }
+
+        .capabilities-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .cap-card {
+            background: var(--gradient-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .cap-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .cap-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            border-radius: 20px 20px 0 0;
+        }
+        .cap-card:nth-child(1)::before { background: linear-gradient(90deg, #4f8fff, #06d6a0); }
+        .cap-card:nth-child(2)::before { background: linear-gradient(90deg, #8b5cf6, #f72585); }
+        .cap-card:nth-child(3)::before { background: linear-gradient(90deg, #f72585, #ff6b35); }
+        .cap-card:nth-child(4)::before { background: linear-gradient(90deg, #06d6a0, #4f8fff); }
+        .cap-card:nth-child(5)::before { background: linear-gradient(90deg, #ff6b35, #8b5cf6); }
+        .cap-card:nth-child(6)::before { background: linear-gradient(90deg, #4f8fff, #f72585); }
+
+        .cap-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin-bottom: 16px;
+        }
+        .cap-card:nth-child(1) .cap-icon { background: rgba(79,143,255,0.15); }
+        .cap-card:nth-child(2) .cap-icon { background: rgba(139,92,246,0.15); }
+        .cap-card:nth-child(3) .cap-icon { background: rgba(247,37,133,0.15); }
+        .cap-card:nth-child(4) .cap-icon { background: rgba(6,214,160,0.15); }
+        .cap-card:nth-child(5) .cap-icon { background: rgba(255,107,53,0.15); }
+        .cap-card:nth-child(6) .cap-icon { background: rgba(79,143,255,0.15); }
+
+        .cap-card h3 {
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        .cap-card p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .cap-features {
+            list-style: none;
+            margin-top: 12px;
+        }
+        .cap-features li {
+            font-size: 12px;
+            color: var(--text-secondary);
+            padding: 3px 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .cap-features li::before {
+            content: '▸';
+            color: var(--accent-cyan);
+            font-weight: bold;
+        }
+
+        /* ==================== IMAGE SHOWCASE SECTION ==================== */
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-top: 40px;
+        }
+        .showcase-item {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border-subtle);
+        }
+        .showcase-item img {
+            width: 100%;
+            display: block;
+            transition: transform 0.5s;
+        }
+        .showcase-item:hover img {
+            transform: scale(1.03);
+        }
+        .showcase-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 20px;
+            background: linear-gradient(0deg, rgba(10,10,26,0.95) 0%, transparent 100%);
+        }
+        .showcase-label h4 {
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .showcase-label span {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* ==================== PAGE 3: PROJECTS ==================== */
+        .projects-page {
+            padding: 80px 0;
+            min-height: 100vh;
+        }
+
+        .project-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+            align-items: center;
+        }
+        .project-row.reverse { direction: rtl; }
+        .project-row.reverse > * { direction: ltr; }
+
+        .project-info {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .project-type {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-cyan);
+        }
+
+        .project-info h3 {
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .project-info p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .project-tech {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .project-image {
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+        .project-image img {
+            width: 100%;
+            display: block;
+        }
+
+        /* ==================== METRICS BAR ==================== */
+        .metrics-bar {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            margin: 48px 0;
+            padding: 32px;
+            background: var(--gradient-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .metric-item {
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 32px;
+            font-weight: 900;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .metric-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        /* ==================== CONTACT / CTA ==================== */
+        .cta-section {
+            text-align: center;
+            padding: 60px 40px;
+            margin: 40px 0;
+            background: linear-gradient(135deg, rgba(79,143,255,0.1), rgba(139,92,246,0.1));
+            border: 1px solid var(--border-subtle);
+            border-radius: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: var(--gradient-main);
+            border-radius: 25px;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        .cta-section h2 {
+            margin-bottom: 12px;
+        }
+        .cta-section p {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            font-size: 16px;
+        }
+        .cta-contacts {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+        .cta-contact-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .cta-contact-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(79,143,255,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        /* ==================== FOOTER ==================== */
+        .footer {
+            text-align: center;
+            padding: 24px;
+            border-top: 1px solid var(--border-subtle);
+            font-size: 12px;
+            color: var(--text-muted);
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ==================== ARCHITECTURE IMAGE ==================== */
+        .arch-section {
+            margin: 48px 0;
+        }
+        .arch-section img {
+            width: 100%;
+            border-radius: 20px;
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 768px) {
+            .hero-content { grid-template-columns: 1fr; }
+            .capabilities-grid { grid-template-columns: 1fr; }
+            .project-row { grid-template-columns: 1fr; }
+            .showcase-grid { grid-template-columns: 1fr; }
+            .metrics-bar { grid-template-columns: repeat(2, 1fr); }
+            .hero-stats { grid-template-columns: repeat(2, 1fr); }
+            .flex-row { flex-direction: column; }
+            .container { padding: 0 20px; }
+        }
+
+        /* ==================== DIVIDER ==================== */
+        .divider {
+            width: 80px;
+            height: 3px;
+            background: var(--gradient-main);
+            border-radius: 3px;
+            margin: 0 auto;
+        }
+
+        /* ==================== PARTNER TRUST ==================== */
+        .trust-bar {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            align-items: center;
+            padding: 32px 0;
+            opacity: 0.5;
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+        }
+
+        .industry-list {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-top: 32px;
+        }
+        .industry-item {
+            background: var(--gradient-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        .industry-item:hover { transform: translateY(-3px); }
+        .industry-icon { font-size: 28px; margin-bottom: 8px; }
+        .industry-name { font-size: 13px; font-weight: 600; }
+        .industry-desc { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+<!-- ===================== PAGE 1: HERO / COVER ===================== -->
+<div class="page" id="page-1">
+    <div class="bg-grid"></div>
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+
+    <div class="hero-page">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-left">
+                    <div class="badge">Yazılım Yetkinlik Sunumu — 2026</div>
+                    
+                    <h1>
+                        Dijital Dönüşümde<br>
+                        <span class="gradient-text">Yazılım Gücü</span>
+                    </h1>
+                    
+                    <p class="subtitle">
+                        ZMK Technology, e-ticaret otomasyonundan kurumsal ERP çözümlerine, 
+                        yapay zekâ destekli analiz motorlarından özel yazılım projelerine kadar 
+                        uçtan uca teknoloji çözümleri sunar.
+                    </p>
+
+                    <div class="tech-tags">
+                        <span class="tech-tag">NestJS</span>
+                        <span class="tech-tag">React / Next.js</span>
+                        <span class="tech-tag">PostgreSQL</span>
+                        <span class="tech-tag">MongoDB</span>
+                        <span class="tech-tag">AI / GPT-4</span>
+                        <span class="tech-tag">TypeScript</span>
+                        <span class="tech-tag">Docker</span>
+                        <span class="tech-tag">Prisma ORM</span>
+                    </div>
+
+                    <div class="hero-stats">
+                        <div class="stat-card">
+                            <div class="stat-number">178+</div>
+                            <div class="stat-label">API Endpoint</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">49</div>
+                            <div class="stat-label">Veritabanı Modeli</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">6+</div>
+                            <div class="stat-label">Canlı Proje</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-image-wrapper">
+                    <div class="hero-image-glow"></div>
+                    <img src="file:///Users/zumerkekillioglu/.gemini/antigravity/brain/52079baf-d048-4597-b992-0a1082a2f26e/multi_device_showcase_1776597449376.png" 
+                         alt="ZMK Platform — Multi-Device Showcase">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== PAGE 2: CAPABILITIES ===================== -->
+<div class="page" id="page-2">
+    <div class="bg-grid"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
+    <div class="capabilities-page">
+        <div class="container">
+            <div class="section-header">
+                <div class="badge">Yazılım Ekosistemi</div>
+                <h2>Neler Yapabiliyoruz?</h2>
+                <p class="subtitle">E-ticaret, ERP, eğitim, personel yönetimi ve daha fazlası — sektöre özel, uçtan uca yazılım çözümleri</p>
+            </div>
+
+            <div class="capabilities-grid">
+                <!-- 1 -->
+                <div class="cap-card">
+                    <div class="cap-icon">🧠</div>
+                    <h3>AI & Yapay Zekâ Entegrasyonu</h3>
+                    <p>İş süreçlerinize yapay zekâ entegre ediyoruz.</p>
+                    <ul class="cap-features">
+                        <li>GPT-4, Claude, Gemini multi-AI desteği</li>
+                        <li>Doğal dil ile veri sorgulama (NL2SQL)</li>
+                        <li>A/B test motoru ile otomatik optimizasyon</li>
+                        <li>Makine öğrenmesi ile satış tahmini</li>
+                    </ul>
+                </div>
+
+                <!-- 2 -->
+                <div class="cap-card">
+                    <div class="cap-icon">📊</div>
+                    <h3>E-Ticaret Otomasyon Platformu</h3>
+                    <p>Pazaryeri satıcıları için kurumsal düzey otomasyon.</p>
+                    <ul class="cap-features">
+                        <li>Trendyol, Hepsiburada, N11, Amazon TR</li>
+                        <li>SKU bazlı P&L kârlılık analizi</li>
+                        <li>Buybox takibi & otomatik fiyatlandırma</li>
+                        <li>Real-time Telegram & WebSocket bildirimleri</li>
+                    </ul>
+                </div>
+
+                <!-- 3 -->
+                <div class="cap-card">
+                    <div class="cap-icon">🕵️</div>
+                    <h3>Rekabet İstihbarat Merkezi</h3>
+                    <p>Rakiplerinizi 7/24 izleyen "War Room" teknolojisi.</p>
+                    <ul class="cap-features">
+                        <li>Nash Dengesi ile optimal fiyat hesaplama</li>
+                        <li>Stealth scraping (anti-detect tarayıcı)</li>
+                        <li>OOS (stoksuz) fırsat yakalama</li>
+                        <li>Kartel tespit & arbitraj tarama</li>
+                    </ul>
+                </div>
+
+                <!-- 4 -->
+                <div class="cap-card">
+                    <div class="cap-icon">🏢</div>
+                    <h3>Kurumsal ERP & Yönetim Sistemleri</h3>
+                    <p>Firmaların tüm süreçlerini dijitalleştiriyoruz.</p>
+                    <ul class="cap-features">
+                        <li>Teşvik belgesi & yatırım takip sistemi</li>
+                        <li>Makine & teçhizat yönetimi</li>
+                        <li>Mali hesaplama & revizyon takibi</li>
+                        <li>e-Fatura entegrasyonu</li>
+                    </ul>
+                </div>
+
+                <!-- 5 -->
+                <div class="cap-card">
+                    <div class="cap-icon">🎓</div>
+                    <h3>Eğitim & LMS Platformları</h3>
+                    <p>Okullar ve eğitim kurumları için komple dijital altyapı.</p>
+                    <ul class="cap-features">
+                        <li>Canlı ders & video kütüphanesi</li>
+                        <li>Soru bankası & otomatik sınav</li>
+                        <li>Öğrenci/Öğretmen/Veli panelleri</li>
+                        <li>Dinamik ders programı yönetimi</li>
+                    </ul>
+                </div>
+
+                <!-- 6 -->
+                <div class="cap-card">
+                    <div class="cap-icon">🚌</div>
+                    <h3>Personel & Servis Takip</h3>
+                    <p>Saha operasyonlarında dijital yönetim.</p>
+                    <ul class="cap-features">
+                        <li>Personel bilgi yönetimi (aktif/pasif)</li>
+                        <li>Güzergah & durak optimizasyonu</li>
+                        <li>CSV/Excel veri senkronizasyonu</li>
+                        <li>Gerçek zamanlı yolcu takibi</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Showcase Images -->
+            <div class="showcase-grid">
+                <div class="showcase-item">
+                    <img src="file:///Users/zumerkekillioglu/.gemini/antigravity/brain/52079baf-d048-4597-b992-0a1082a2f26e/dashboard_analytics_1776597391537.png" 
+                         alt="Analytics Dashboard">
+                    <div class="showcase-label">
+                        <h4>📈 KPI Dashboard & Analitik</h4>
+                        <span>Revenue, Profit, Order Heatmap & Trend Analizi</span>
+                    </div>
+                </div>
+                <div class="showcase-item">
+                    <img src="file:///Users/zumerkekillioglu/.gemini/antigravity/brain/52079baf-d048-4597-b992-0a1082a2f26e/competitor_intelligence_1776597405976.png" 
+                         alt="Competitor Intelligence">
+                    <div class="showcase-label">
+                        <h4>🕵️ Rekabet İstihbarat War Room</h4>
+                        <span>Rakip Fiyat İzleme, Buybox & Nash Dengesi Fiyatlama</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== PAGE 3: PROJECTS + ARCH ===================== -->
+<div class="page" id="page-3">
+    <div class="bg-grid"></div>
+    <div class="bg-orb bg-orb-1" style="top: auto; bottom: -100px; right: auto; left: 30%;"></div>
+
+    <div class="capabilities-page">
+        <div class="container">
+
+            <!-- Metrics Bar -->
+            <div class="metrics-bar">
+                <div class="metric-item">
+                    <div class="metric-value">12+</div>
+                    <div class="metric-label">Modül</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">178</div>
+                    <div class="metric-label">API Endpoint</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">4</div>
+                    <div class="metric-label">AI Sağlayıcı</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">10+</div>
+                    <div class="metric-label">İstihbarat Servisi</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">∞</div>
+                    <div class="metric-label">Ölçeklenebilirlik</div>
+                </div>
+            </div>
+
+            <!-- AI Assistant Section -->
+            <div class="project-row">
+                <div class="project-info">
+                    <span class="project-type">AI Destekli</span>
+                    <h3>Doğal Dil ile Mağaza Yönetimi</h3>
+                    <p>
+                        Yapay zekâ asistanımız, "Geçen haftanın en kârlı ürünü ne?" gibi doğal dil 
+                        sorularıyla mağazanızı yönetmenizi sağlar. GPT-4, Claude ve Gemini ile 
+                        çoklu AI desteği sunar. Satış tahminleri, stok uyarıları ve aksiyon 
+                        önerileri doğrudan sohbet ekranında.
+                    </p>
+                    <div class="project-tech">
+                        <span class="tech-tag">OpenAI GPT-4</span>
+                        <span class="tech-tag">Anthropic Claude</span>
+                        <span class="tech-tag">Google Gemini</span>
+                        <span class="tech-tag">NL2SQL</span>
+                    </div>
+                </div>
+                <div class="project-image">
+                    <img src="file:///Users/zumerkekillioglu/.gemini/antigravity/brain/52079baf-d048-4597-b992-0a1082a2f26e/ai_assistant_1776597420099.png" 
+                         alt="AI Assistant">
+                </div>
+            </div>
+
+            <!-- Architecture Section -->
+            <div class="section-header" style="margin-top: 48px;">
+                <div class="badge">Teknik Altyapı</div>
+                <h2>Enterprise-Grade Mimari</h2>
+                <p class="subtitle">Modüler, ölçeklenebilir, güvenli — kurumsal seviye yazılım mimarisi</p>
+            </div>
+
+            <div class="arch-section">
+                <img src="file:///Users/zumerkekillioglu/.gemini/antigravity/brain/52079baf-d048-4597-b992-0a1082a2f26e/tech_architecture_1776597465635.png" 
+                     alt="ZMK Technology Architecture">
+            </div>
+
+            <!-- Industry Section -->
+            <div class="section-header" style="margin-top: 48px;">
+                <div class="badge">Sektörel Deneyim</div>
+                <h2>Hizmet Verdiğimiz Sektörler</h2>
+            </div>
+
+            <div class="industry-list">
+                <div class="industry-item">
+                    <div class="industry-icon">🛒</div>
+                    <div class="industry-name">E-Ticaret & Perakende</div>
+                    <div class="industry-desc">Pazaryeri otomasyon & analitik</div>
+                </div>
+                <div class="industry-item">
+                    <div class="industry-icon">🏭</div>
+                    <div class="industry-name">Sanayi & Üretim</div>
+                    <div class="industry-desc">ERP, teşvik & makine yönetimi</div>
+                </div>
+                <div class="industry-item">
+                    <div class="industry-icon">📚</div>
+                    <div class="industry-name">Eğitim & Öğretim</div>
+                    <div class="industry-desc">LMS, sınav & canlı ders</div>
+                </div>
+                <div class="industry-item">
+                    <div class="industry-icon">🚛</div>
+                    <div class="industry-name">Lojistik & Personel</div>
+                    <div class="industry-desc">Servis takip & güzergah</div>
+                </div>
+                <div class="industry-item">
+                    <div class="industry-icon">🏨</div>
+                    <div class="industry-name">Gayrimenkul & Apart</div>
+                    <div class="industry-desc">Yönetim & kiralama panelleri</div>
+                </div>
+                <div class="industry-item">
+                    <div class="industry-icon">👟</div>
+                    <div class="industry-name">Moda & Giyim Markaları</div>
+                    <div class="industry-desc">Marka dijital dönüşümü</div>
+                </div>
+                <div class="industry-item">
+                    <div class="industry-icon">📈</div>
+                    <div class="industry-name">Dijital Pazarlama</div>
+                    <div class="industry-desc">SEO, Ads & içerik yönetimi</div>
+                </div>
+                <div class="industry-item">
+                    <div class="industry-icon">🔒</div>
+                    <div class="industry-name">Kurumsal Güvenlik</div>
+                    <div class="industry-desc">AES-256, JWT & audit log</div>
+                </div>
+            </div>
+
+            <!-- CTA / Contact -->
+            <div class="cta-section" style="margin-top: 48px;">
+                <h2>Markanızı Dijitale Taşıyalım</h2>
+                <p>Projeleriniz için sektöre özel, ölçeklenebilir yazılım çözümleri üretelim.</p>
+                <div class="cta-contacts">
+                    <div class="cta-contact-item">
+                        <div class="cta-contact-icon">🌐</div>
+                        <span>zmkagency.com</span>
+                    </div>
+                    <div class="cta-contact-item">
+                        <div class="cta-contact-icon">📧</div>
+                        <span>info@zmkagency.com</span>
+                    </div>
+                    <div class="cta-contact-item">
+                        <div class="cta-contact-icon">📱</div>
+                        <span>WhatsApp İletişim</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer">
+                ZMK Technology Agency © 2026 — Tüm Hakları Saklıdır &nbsp;|&nbsp; Kırıkkale, Türkiye
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
